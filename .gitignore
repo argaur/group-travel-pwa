@@ -1,0 +1,27 @@
+# ── Frontend ──────────────────────────────────────────────────────────────────
+frontend/.next/
+frontend/out/
+frontend/node_modules/
+frontend/.env*.local
+frontend/public/sw.js
+frontend/public/workbox-*.js
+frontend/public/worker-*.js
+frontend/public/fallback-*.js
+frontend/public/swe-worker-*.js
+
+# ── Backend ───────────────────────────────────────────────────────────────────
+backend/__pycache__/
+backend/**/__pycache__/
+**/*.pyc
+**/*.pyo
+backend/.env
+backend/.venv/
+backend/venv/
+backend/*.egg-info/
+
+# ── General ───────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+.env
+.env.local
