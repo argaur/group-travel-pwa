@@ -1,15 +1,21 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
-from routers import trips, members, preferences, tasks, itinerary, expenses, votes, ai_routes, stream
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from config import get_settings
+from database import engine
+from routers import ai_routes, expenses, itinerary, members, preferences, stream, tasks, trips, votes
+
+settings = get_settings()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup: initialise DB connection pool here (Neon/asyncpg)
+    # Startup: connection pool is initialised lazily by SQLAlchemy on first query
     yield
-    # Shutdown: close pool
+    # Shutdown: dispose engine to close all pooled connections
+    await engine.dispose()
 
 
 app = FastAPI(
@@ -20,7 +26,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://your-vercel-domain.vercel.app"],
+    allow_origins=settings.origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
