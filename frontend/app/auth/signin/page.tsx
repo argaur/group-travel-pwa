@@ -3,6 +3,8 @@
 import { signIn } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
 
+export const dynamic = "force-dynamic"
+
 export default function SignInPage() {
   const searchParams = useSearchParams()
   const callbackUrl = searchParams.get("callbackUrl") ?? "/trips/new"
