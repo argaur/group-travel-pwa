@@ -2,6 +2,7 @@
 AI service — all Claude API calls live here.
 Model: claude-sonnet-4-6
 """
+import json
 import os
 import anthropic
 
@@ -36,8 +37,11 @@ Respond with JSON:
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )
-    # TODO: parse JSON from message.content[0].text, handle malformed responses
-    return {"raw": message.content[0].text}
+    raw = message.content[0].text
+    try:
+        return json.loads(raw)
+    except Exception:
+        return {"raw": raw}
 
 
 async def suggest_destinations(synthesis: dict, trip_meta: dict) -> list[dict]:
@@ -63,7 +67,11 @@ Respond as a JSON array."""
         max_tokens=2048,
         messages=[{"role": "user", "content": prompt}],
     )
-    return {"raw": message.content[0].text}
+    raw = message.content[0].text
+    try:
+        return json.loads(raw)
+    except Exception:
+        return {"raw": raw}
 
 
 async def suggest_itinerary(day: int, destination: str, group_context: str) -> dict:
@@ -80,7 +88,11 @@ Respond as JSON."""
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}],
     )
-    return {"raw": message.content[0].text}
+    raw = message.content[0].text
+    try:
+        return json.loads(raw)
+    except Exception:
+        return {"raw": raw}
 
 
 # V3 stubs

@@ -3,21 +3,37 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --bg: #f6f2ed;
+  --surface: #ffffff;
+  --ink: #0f1222;
+  --muted: #7a7f8b;
+  --nav: #171b2b;
+  --nav-accent: #262b3f;
+  --line: rgba(15, 18, 34, 0.08);
+  --accent-pink: #ff6b9a;
+  --accent-coral: #ff8a6b;
+  --accent-lilac: #9a8cff;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(15, 18, 34, 0.05);
+}
+
+.chip {
+  background: rgba(15, 18, 34, 0.05);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 @layer utilities {

@@ -43,16 +43,19 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     cfg = config.get_section(config.config_ini_section, {})
-    cfg["sqlalchemy.url"] = get_url()
+    raw_url = get_url()
+    # asyncpg doesn't accept sslmode/channel_binding as kwargs — strip them
+    clean_url = raw_url.split("?")[0]
+    cfg["sqlalchemy.url"] = clean_url
     connectable = async_engine_from_config(
         cfg,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
+        connect_args={"ssl": True},
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
     await connectable.dispose()
-
 
 def run_migrations_online() -> None:
     asyncio.run(run_async_migrations())

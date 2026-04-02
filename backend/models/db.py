@@ -3,7 +3,7 @@ SQLAlchemy ORM models — all V1 domains.
 Response shapes (Pydantic) live in models/schemas.py.
 """
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, time
 
 from sqlalchemy import (
     BigInteger,
@@ -15,6 +15,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    Time,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB, UUID
@@ -44,6 +45,7 @@ class User(Base):
     expense_splits: Mapped[list["ExpenseSplit"]] = relationship("ExpenseSplit", back_populates="user")
     votes_created: Mapped[list["Vote"]] = relationship("Vote", back_populates="creator")
     vote_responses: Mapped[list["VoteResponse"]] = relationship("VoteResponse", back_populates="user")
+    push_subscriptions: Mapped[list["PushSubscription"]] = relationship("PushSubscription", back_populates="user")
 
 
 # ── Trips ─────────────────────────────────────────────────────────────────────
@@ -56,6 +58,8 @@ class Trip(Base):
     destination: Mapped[str | None] = mapped_column(String(255), nullable=True)
     start_date: Mapped[date | None] = mapped_column(Date, nullable=True)
     end_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    trip_type: Mapped[str] = mapped_column(String(50), default="leisure", nullable=False)
+    group_size_estimate: Mapped[int | None] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(
         Enum("planning", "confirmed", "completed", "cancelled", name="trip_status"),
         default="planning",
@@ -70,6 +74,8 @@ class Trip(Base):
     tasks: Mapped[list["Task"]] = relationship("Task", back_populates="trip", cascade="all, delete-orphan")
     expenses: Mapped[list["Expense"]] = relationship("Expense", back_populates="trip", cascade="all, delete-orphan")
     votes: Mapped[list["Vote"]] = relationship("Vote", back_populates="trip", cascade="all, delete-orphan")
+    itinerary_items: Mapped[list["ItineraryItem"]] = relationship("ItineraryItem", back_populates="trip", cascade="all, delete-orphan")
+    push_subscriptions: Mapped[list["PushSubscription"]] = relationship("PushSubscription", back_populates="trip", cascade="all, delete-orphan")
 
 
 # ── Trip Members ──────────────────────────────────────────────────────────────
@@ -105,6 +111,8 @@ class Preference(Base):
     budget_max: Mapped[int | None] = mapped_column(Integer, nullable=True)
     dietary: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
     trip_style: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    constraints: Mapped[list[str] | None] = mapped_column(ARRAY(String), nullable=True)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     submitted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     trip: Mapped["Trip"] = relationship("Trip", back_populates="preferences")
@@ -144,7 +152,7 @@ class Expense(Base):
     category: Mapped[str] = mapped_column(String(100), nullable=False)
     paid_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     split_type: Mapped[str] = mapped_column(
-        Enum("equal", "custom", name="split_type"),
+        Enum("equal", "custom", "category_owner", name="split_type"),
         default="equal",
         nullable=False,
     )
@@ -198,3 +206,43 @@ class VoteResponse(Base):
 
     vote: Mapped["Vote"] = relationship("Vote", back_populates="responses")
     user: Mapped["User"] = relationship("User", back_populates="vote_responses")
+
+
+# ── Itinerary ─────────────────────────────────────────────────────────────────
+
+class ItineraryItem(Base):
+    __tablename__ = "itinerary_items"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    trip_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False)
+    day_number: Mapped[int] = mapped_column(Integer, nullable=False)
+    title: Mapped[str] = mapped_column(String(500), nullable=False)
+    location: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    start_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    end_time: Mapped[time | None] = mapped_column(Time, nullable=True)
+    cost_estimate: Mapped[int | None] = mapped_column(BigInteger, nullable=True)  # paise
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    assigned_to: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
+    sub_group: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    trip: Mapped["Trip"] = relationship("Trip", back_populates="itinerary_items")
+
+
+# ── Push Subscriptions ────────────────────────────────────────────────────────
+
+class PushSubscription(Base):
+    __tablename__ = "push_subscriptions"
+    __table_args__ = (UniqueConstraint("trip_id", "user_id", name="uq_push_trip_user"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    trip_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    endpoint: Mapped[str] = mapped_column(Text, nullable=False)
+    p256dh: Mapped[str] = mapped_column(Text, nullable=False)
+    auth: Mapped[str] = mapped_column(Text, nullable=False)
+    raw: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    trip: Mapped["Trip"] = relationship("Trip", back_populates="push_subscriptions")
+    user: Mapped["User"] = relationship("User", back_populates="push_subscriptions")
