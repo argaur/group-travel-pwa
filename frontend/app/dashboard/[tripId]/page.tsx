@@ -28,6 +28,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     api.get<Trip>(`/trips/${params.tripId}`).then(setTrip)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     api.get<any[]>(`/trips/${params.tripId}/members`).then((members) => {
       setMemberCount(members.length)
       setPreferencesCount(members.filter((m) => m.preference_submitted).length)

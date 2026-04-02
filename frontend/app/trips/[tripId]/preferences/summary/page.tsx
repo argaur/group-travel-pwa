@@ -29,6 +29,7 @@ export default function PreferenceSummaryPage() {
   async function loadAi() {
     setLoading(true)
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const data = await api.get<any>(
         `/trips/${params.tripId}/preferences/ai-synthesis`
       )
