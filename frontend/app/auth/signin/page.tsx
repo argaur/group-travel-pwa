@@ -1,13 +1,16 @@
 "use client"
 
 import { signIn } from "next-auth/react"
-import { useSearchParams } from "next/navigation"
-
-export const dynamic = "force-dynamic"
+import { useState, useEffect } from "react"
 
 export default function SignInPage() {
-  const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/trips/new"
+  const [callbackUrl, setCallbackUrl] = useState("/trips/new")
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const cb = params.get("callbackUrl")
+    if (cb) setCallbackUrl(cb)
+  }, [])
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
