@@ -19,16 +19,16 @@ export default function Home() {
         </p>
         <div className="mt-8 flex gap-3">
           <a
-            href="/trips/new"
+            href="/auth/signin?callbackUrl=/trips/new"
             className="rounded-full bg-[var(--ink)] text-white px-5 py-2"
           >
             Create a trip
           </a>
           <a
-            href="/auth/signin"
+            href="/auth/signin?callbackUrl=/"
             className="rounded-full border border-black/10 px-5 py-2"
           >
-            Join a trip
+            Sign in
           </a>
         </div>
       </div>

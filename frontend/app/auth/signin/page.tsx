@@ -1,8 +1,12 @@
 "use client"
 
 import { signIn } from "next-auth/react"
+import { useSearchParams } from "next/navigation"
 
 export default function SignInPage() {
+  const searchParams = useSearchParams()
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/trips/new"
+
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
       <div className="card w-full max-w-md p-8">
@@ -13,7 +17,7 @@ export default function SignInPage() {
         </p>
         <button
           className="w-full rounded-full bg-[var(--ink)] text-white px-4 py-2"
-          onClick={() => signIn("google", { callbackUrl: "/trips/new" })}
+          onClick={() => signIn("google", { callbackUrl })}
         >
           Continue with Google
         </button>

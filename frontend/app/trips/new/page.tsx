@@ -1,12 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { api } from "@/lib/api"
 
 export default function NewTripPage() {
   const router = useRouter()
+  const { status } = useSession()
   const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin?callbackUrl=/trips/new")
+    }
+  }, [status, router])
   const [name, setName] = useState("")
   const [destination, setDestination] = useState("")
   const [tripType, setTripType] = useState("leisure")
