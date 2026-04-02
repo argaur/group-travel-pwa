@@ -2,6 +2,9 @@
 AI service — all Claude API calls live here.
 Model: claude-sonnet-4-6
 """
+from dotenv import load_dotenv
+load_dotenv()
+
 import json
 import os
 import anthropic
