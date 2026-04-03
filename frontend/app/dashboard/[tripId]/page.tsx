@@ -63,6 +63,13 @@ const DEMO_DECISIONS = [
   { title: "Book main stay", status: "Research in progress", due: "After dates" },
 ]
 
+function getErrorMessage(error: unknown) {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  return "Unknown error"
+}
+
 export default function DashboardPage() {
   const params = useParams<{ tripId: string }>()
   const [summary, setSummary] = useState<DashboardSummary | null>(null)
@@ -72,6 +79,7 @@ export default function DashboardPage() {
   const [transferTo, setTransferTo] = useState("")
   const [transferMsg, setTransferMsg] = useState<string | null>(null)
   const [placeCard, setPlaceCard] = useState<PlaceDetails | null>(null)
+  const [error, setError] = useState<string | null>(null)
 
   const myId = getBackendUserId()
   const me = useMemo(
@@ -81,17 +89,23 @@ export default function DashboardPage() {
   const isOrganizer = me?.role === "organizer"
 
   const load = useCallback(async () => {
-    await ensureBackendToken()
-    const [dash, mems] = await Promise.all([
-      api.get<DashboardSummary>(`/trips/${params.tripId}/dashboard-summary`),
-      api.get<MemberRow[]>(`/trips/${params.tripId}/members`),
-    ])
-    setSummary(dash)
-    setMembers(mems)
+    try {
+      await ensureBackendToken()
+      const [dash, mems] = await Promise.all([
+        api.get<DashboardSummary>(`/trips/${params.tripId}/dashboard-summary`),
+        api.get<MemberRow[]>(`/trips/${params.tripId}/members`),
+      ])
+      setSummary(dash)
+      setMembers(mems)
+      setError(null) // Clear any previous errors
+    } catch (error: unknown) {
+      setError(`Failed to load trip data: ${getErrorMessage(error)}`)
+      setSummary(null) // Keep summary null to show error UI
+    }
   }, [params.tripId])
 
   useEffect(() => {
-    load().catch(() => setSummary(null))
+    load()
   }, [load])
 
   useEffect(() => {
@@ -171,7 +185,11 @@ export default function DashboardPage() {
   if (!summary) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-sm text-[var(--muted)]">Loading trip…</p>
+        {error ? (
+          <p className="text-sm text-red-500">{error}</p>
+        ) : (
+          <p className="text-sm text-[var(--muted)]">Loading trip…</p>
+        )}
       </div>
     )
   }

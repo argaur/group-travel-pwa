@@ -35,7 +35,7 @@ export default function AppShell({
               className={`group flex items-center gap-3 px-3 py-2 rounded-full text-sm transition-all duration-200 ${
                 active === item.id
                   ? "bg-[var(--nav-accent)] text-white shadow-[0_8px_20px_rgba(0,0,0,0.2)]"
-                  : "text-white/70 hover:text-white hover:bg-white/5"
+                  : "text-gray-300 hover:text-white hover:bg-white/5"
               }`}
             >
               <span
