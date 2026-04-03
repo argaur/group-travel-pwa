@@ -1,6 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+/* eslint-disable react-hooks/set-state-in-effect */
+
+import { useCallback, useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { api } from "@/lib/api"
 import { getBackendUserId } from "@/lib/backend-auth"
@@ -22,16 +24,16 @@ export default function ExpensesPage() {
   const [category, setCategory] = useState("food")
   const [paidBy, setPaidBy] = useState("")
 
-  async function load() {
+  const load = useCallback(async () => {
     const data = await api.get<Expense[]>(`/trips/${params.tripId}/expenses`)
     setExpenses(data)
-  }
+  }, [params.tripId])
 
   useEffect(() => {
     load()
     const id = getBackendUserId()
     if (id) setPaidBy(id)
-  }, [params.tripId])
+  }, [load])
 
   async function addExpense(e: React.FormEvent) {
     e.preventDefault()

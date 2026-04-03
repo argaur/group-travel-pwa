@@ -1,6 +1,8 @@
 "use client"
 
-import { useEffect, useState } from "react"
+/* eslint-disable react-hooks/set-state-in-effect */
+
+import { useCallback, useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { api } from "@/lib/api"
 import AppShell from "@/components/AppShell"
@@ -20,14 +22,14 @@ export default function TasksPage() {
   const [title, setTitle] = useState("")
   const [category, setCategory] = useState("flights")
 
-  async function load() {
+  const load = useCallback(async () => {
     const data = await api.get<Task[]>(`/trips/${params.tripId}/tasks`)
     setTasks(data)
-  }
+  }, [params.tripId])
 
   useEffect(() => {
     load()
-  }, [params.tripId])
+  }, [load])
 
   async function createTask(e: React.FormEvent) {
     e.preventDefault()

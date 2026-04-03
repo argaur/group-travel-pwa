@@ -1,16 +1,12 @@
 "use client"
 
 import { signIn } from "next-auth/react"
-import { useState, useEffect } from "react"
 
 export default function SignInPage() {
-  const [callbackUrl, setCallbackUrl] = useState("/trips/new")
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const cb = params.get("callbackUrl")
-    if (cb) setCallbackUrl(cb)
-  }, [])
+  const callbackUrl =
+    typeof window === "undefined"
+      ? "/trips/new"
+      : new URLSearchParams(window.location.search).get("callbackUrl") ?? "/trips/new"
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6">
