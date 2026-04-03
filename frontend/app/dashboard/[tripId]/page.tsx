@@ -73,7 +73,7 @@ export default function DashboardPage() {
     >
       <div className="grid gap-6 xl:grid-cols-[2fr_1fr]">
         <div className="grid gap-6">
-          <div className="card p-6 bg-gradient-to-br from-[var(--accent-coral)] to-[var(--accent-pink)] text-white">
+          <div className="card p-6 bg-gradient-to-br from-[var(--accent-coral)] to-[var(--accent-pink)] text-white animate-fade-up">
             <div className="flex items-center justify-between">
               <p className="text-sm/80">Group alignment</p>
               <span className="chip bg-white/20 text-white">Live</span>
@@ -93,22 +93,28 @@ export default function DashboardPage() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <a className="card p-5" href={`/trips/${params.tripId}/preferences/summary`}>
+            <a
+              className="card card-interactive p-5 animate-fade-up"
+              href={`/trips/${params.tripId}/preferences/summary`}
+            >
               <p className="text-sm text-[var(--muted)]">Preferences</p>
               <p className="text-lg font-semibold mt-1">View summary</p>
               <p className="text-xs text-[var(--muted)] mt-2">Budget overlap + constraints</p>
             </a>
-            <a className="card p-5" href={`/trips/${params.tripId}/tasks`}>
+            <a className="card card-interactive p-5 animate-fade-up" href={`/trips/${params.tripId}/tasks`}>
               <p className="text-sm text-[var(--muted)]">Tasks</p>
               <p className="text-lg font-semibold mt-1">Assign & track</p>
               <p className="text-xs text-[var(--muted)] mt-2">Distribute planning load</p>
             </a>
-            <a className="card p-5" href={`/trips/${params.tripId}/expenses`}>
+            <a
+              className="card card-interactive p-5 animate-fade-up"
+              href={`/trips/${params.tripId}/expenses`}
+            >
               <p className="text-sm text-[var(--muted)]">Expenses</p>
               <p className="text-lg font-semibold mt-1">Track spend</p>
               <p className="text-xs text-[var(--muted)] mt-2">Auto settlement ready</p>
             </a>
-            <a className="card p-5" href={`/trips/${params.tripId}/itinerary`}>
+            <a className="card card-interactive p-5 animate-fade-up" href={`/trips/${params.tripId}/itinerary`}>
               <p className="text-sm text-[var(--muted)]">Itinerary</p>
               <p className="text-lg font-semibold mt-1">Day plan</p>
               <p className="text-xs text-[var(--muted)] mt-2">Shared schedule</p>
@@ -117,14 +123,14 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid gap-4">
-          <div className="card p-5">
+          <div className="card card-interactive p-5 animate-fade-up">
             <p className="text-sm text-[var(--muted)]">Notifications</p>
             <p className="text-lg font-semibold mt-1">Enable alerts</p>
             <p className="text-xs text-[var(--muted)] mt-2">
               Get nudges for task assignments and updates.
             </p>
             <button
-              className="mt-4 rounded-full bg-[var(--ink)] text-white px-4 py-2 text-sm"
+              className="mt-4 rounded-full bg-[var(--ink)] text-white px-4 py-2 text-sm transition-all duration-200 hover:translate-y-[-1px] hover:shadow-[0_14px_24px_rgba(15,18,34,0.2)]"
               onClick={enablePush}
             >
               Enable
@@ -133,14 +139,14 @@ export default function DashboardPage() {
               <p className="text-xs text-[var(--muted)] mt-2">{pushStatus}</p>
             )}
           </div>
-          <div className="card p-5">
+          <div className="card card-interactive p-5 animate-fade-up">
             <p className="text-sm text-[var(--muted)]">Next step</p>
             <p className="text-lg font-semibold mt-1">Invite members</p>
             <p className="text-xs text-[var(--muted)] mt-2">
               Share the invite link to collect preferences faster.
             </p>
             <a
-              className="mt-4 inline-block rounded-full border border-black/10 px-4 py-2 text-sm"
+              className="mt-4 inline-block rounded-full border border-black/10 px-4 py-2 text-sm transition-colors duration-200 hover:border-black/20 hover:bg-black/[0.03]"
               href={`/trips/${params.tripId}/join`}
             >
               Open invite link
