@@ -8,7 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user
 from database import get_db
-from models.db import TripMember, Vote, VoteResponse
+from models.db import Vote, VoteResponse
+from routers.guards import require_preferences_submitted
 from routers.stream import publish
 
 router = APIRouter()
@@ -33,14 +34,7 @@ async def cast_vote(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
-    membership = await db.execute(
-        select(TripMember).where(
-            TripMember.trip_id == trip_uuid,
-            TripMember.user_id == user.id,
-        )
-    )
-    if membership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+    await require_preferences_submitted(db, trip_uuid, user.id)
 
     vote_result = await db.execute(
         select(Vote).where(Vote.trip_id == trip_uuid, Vote.topic == body.vote_type)
@@ -82,14 +76,7 @@ async def get_vote_tally(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
-    membership = await db.execute(
-        select(TripMember).where(
-            TripMember.trip_id == trip_uuid,
-            TripMember.user_id == user.id,
-        )
-    )
-    if membership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+    await require_preferences_submitted(db, trip_uuid, user.id)
 
     vote_result = await db.execute(
         select(Vote).where(Vote.trip_id == trip_uuid, Vote.topic == vote_type)

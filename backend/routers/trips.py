@@ -4,12 +4,14 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user
 from database import get_db
-from models.db import Trip, TripMember
+from models.db import ItineraryItem, Preference, Task, Trip, TripMember
+from routers.guards import require_trip_member
+from services.preference_summary import aggregate_preferences
 
 router = APIRouter()
 
@@ -189,3 +191,73 @@ async def archive_trip(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Organizer only")
 
     trip.status = "cancelled"
+
+
+@router.get("/{trip_id}/dashboard-summary")
+async def trip_dashboard_summary(
+    trip_id: str,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    """Aggregates trip hub data for a single-screen dashboard (member may view before prefs done)."""
+    trip_uuid = uuid.UUID(trip_id)
+    await require_trip_member(db, trip_uuid, user.id)
+
+    trip_row = await db.execute(select(Trip).where(Trip.id == trip_uuid))
+    trip = trip_row.scalar_one_or_none()
+    if trip is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+
+    prefs_result = await db.execute(select(Preference).where(Preference.trip_id == trip_uuid))
+    preferences = prefs_result.scalars().all()
+    pref_agg = aggregate_preferences(preferences)
+
+    members_result = await db.execute(select(TripMember).where(TripMember.trip_id == trip_uuid))
+    members = members_result.scalars().all()
+    responded = sum(1 for m in members if m.preference_submitted)
+
+    task_counts = await db.execute(
+        select(Task.status, func.count(Task.id)).where(Task.trip_id == trip_uuid).group_by(Task.status)
+    )
+    task_by_status = {row[0]: row[1] for row in task_counts.all()}
+
+    itin_result = await db.execute(
+        select(ItineraryItem)
+        .where(ItineraryItem.trip_id == trip_uuid, ItineraryItem.day_number.in_([1, 2]))
+        .order_by(ItineraryItem.day_number, ItineraryItem.start_time)
+        .limit(12)
+    )
+    itinerary_preview = [
+        {
+            "id": str(item.id),
+            "day_number": item.day_number,
+            "title": item.title,
+            "location": item.location,
+            "start_time": str(item.start_time) if item.start_time else None,
+        }
+        for item in itin_result.scalars().all()
+    ]
+
+    return {
+        "trip": {
+            "id": str(trip.id),
+            "name": trip.title,
+            "destination": trip.destination,
+            "start_date": trip.start_date.isoformat() if trip.start_date else None,
+            "end_date": trip.end_date.isoformat() if trip.end_date else None,
+            "trip_type": trip.trip_type,
+            "status": trip.status,
+        },
+        "members_total": len(members),
+        "preferences_responded": responded,
+        "preference_snapshot": {
+            "budget_overlap": pref_agg["budget_overlap"],
+            "dietary_union": pref_agg["dietary_union"],
+            "gap_flags": pref_agg["gap_flags"],
+        },
+        "tasks": {
+            "by_status": task_by_status,
+            "total": sum(task_by_status.values()) if task_by_status else 0,
+        },
+        "itinerary_preview": itinerary_preview,
+    }

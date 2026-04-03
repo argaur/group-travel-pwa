@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { api } from "@/lib/api"
 import AppShell from "@/components/AppShell"
+import TripPlanningGate from "@/components/TripPlanningGate"
 
 type Settlement = {
   from_user: { id: string; name: string; avatar_url: string | null }
@@ -12,7 +13,7 @@ type Settlement = {
   settled: boolean
 }
 
-export default function SettlementPage() {
+function SettlementContent() {
   const params = useParams<{ tripId: string }>()
   const [rows, setRows] = useState<Settlement[]>([])
 
@@ -46,5 +47,14 @@ export default function SettlementPage() {
         )}
       </div>
     </AppShell>
+  )
+}
+
+export default function SettlementPage() {
+  const params = useParams<{ tripId: string }>()
+  return (
+    <TripPlanningGate tripId={params.tripId}>
+      <SettlementContent />
+    </TripPlanningGate>
   )
 }

@@ -1,7 +1,7 @@
 import json
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
@@ -13,6 +13,7 @@ from auth import get_current_user
 from config import get_settings
 from database import get_db
 from models.db import PushSubscription, Task, TripMember
+from routers.guards import require_preferences_submitted, require_user_is_trip_member_user
 from routers.stream import publish
 
 router = APIRouter()
@@ -42,14 +43,10 @@ async def create_task(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
-    membership = await db.execute(
-        select(TripMember).where(
-            TripMember.trip_id == trip_uuid,
-            TripMember.user_id == user.id,
-        )
-    )
-    if membership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+    await require_preferences_submitted(db, trip_uuid, user.id)
+
+    if body.assigned_to:
+        await require_user_is_trip_member_user(db, trip_uuid, uuid.UUID(body.assigned_to))
 
     task = Task(
         trip_id=trip_uuid,
@@ -72,14 +69,7 @@ async def list_tasks(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
-    membership = await db.execute(
-        select(TripMember).where(
-            TripMember.trip_id == trip_uuid,
-            TripMember.user_id == user.id,
-        )
-    )
-    if membership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+    await require_preferences_submitted(db, trip_uuid, user.id)
 
     query = select(Task).where(Task.trip_id == trip_uuid)
     if status:
@@ -110,20 +100,16 @@ async def update_task(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
-    membership = await db.execute(
-        select(TripMember).where(
-            TripMember.trip_id == trip_uuid,
-            TripMember.user_id == user.id,
-        )
-    )
-    if membership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+    await require_preferences_submitted(db, trip_uuid, user.id)
 
     task_uuid = uuid.UUID(task_id)
     result = await db.execute(select(Task).where(Task.id == task_uuid, Task.trip_id == trip_uuid))
     task = result.scalar_one_or_none()
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+
+    if body.assigned_to is not None:
+        await require_user_is_trip_member_user(db, trip_uuid, uuid.UUID(body.assigned_to))
 
     if body.title is not None:
         task.title = body.title
@@ -149,6 +135,8 @@ async def nudge_assignee(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
+    await require_preferences_submitted(db, trip_uuid, user.id)
+
     task_uuid = uuid.UUID(task_id)
     result = await db.execute(select(Task).where(Task.id == task_uuid, Task.trip_id == trip_uuid))
     task = result.scalar_one_or_none()

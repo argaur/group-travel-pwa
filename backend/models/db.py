@@ -46,6 +46,9 @@ class User(Base):
     votes_created: Mapped[list["Vote"]] = relationship("Vote", back_populates="creator")
     vote_responses: Mapped[list["VoteResponse"]] = relationship("VoteResponse", back_populates="user")
     push_subscriptions: Mapped[list["PushSubscription"]] = relationship("PushSubscription", back_populates="user")
+    itinerary_comments: Mapped[list["ItineraryComment"]] = relationship(
+        "ItineraryComment", back_populates="user"
+    )
 
 
 # ── Trips ─────────────────────────────────────────────────────────────────────
@@ -227,6 +230,25 @@ class ItineraryItem(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     trip: Mapped["Trip"] = relationship("Trip", back_populates="itinerary_items")
+    comments: Mapped[list["ItineraryComment"]] = relationship(
+        "ItineraryComment", back_populates="itinerary_item", cascade="all, delete-orphan"
+    )
+
+
+class ItineraryComment(Base):
+    __tablename__ = "itinerary_comments"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    trip_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False)
+    itinerary_item_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("itinerary_items.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    body: Mapped[str] = mapped_column(Text, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    itinerary_item: Mapped["ItineraryItem"] = relationship("ItineraryItem", back_populates="comments")
+    user: Mapped["User"] = relationship("User", back_populates="itinerary_comments")
 
 
 # ── Push Subscriptions ────────────────────────────────────────────────────────

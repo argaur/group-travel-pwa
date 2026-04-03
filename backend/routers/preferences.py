@@ -1,5 +1,4 @@
 import uuid
-from collections import Counter
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -12,6 +11,7 @@ from database import get_db
 from models.db import Preference, TripMember
 from routers.stream import publish
 from services.ai import synthesize_preferences
+from services.preference_summary import aggregate_preferences
 
 router = APIRouter()
 
@@ -24,44 +24,6 @@ class PreferenceSubmit(BaseModel):
     constraints: list[str] = []
     notes: Optional[str] = None
     is_anonymous: bool = True
-
-
-def _aggregate(preferences: list[Preference]) -> dict:
-    budget_ranges = [
-        (p.budget_min, p.budget_max)
-        for p in preferences
-        if p.budget_min is not None and p.budget_max is not None
-    ]
-    if budget_ranges:
-        overlap_min = max(b[0] for b in budget_ranges)
-        overlap_max = min(b[1] for b in budget_ranges)
-        budget_overlap = {"min": overlap_min, "max": overlap_max} if overlap_min <= overlap_max else None
-        global_min = min(b[0] for b in budget_ranges)
-        global_max = max(b[1] for b in budget_ranges)
-    else:
-        budget_overlap = None
-        global_min = global_max = None
-
-    dietary_union = sorted({d for p in preferences for d in (p.dietary or [])})
-    styles = [p.trip_style for p in preferences if p.trip_style]
-    style_distribution = dict(Counter(styles))
-
-    gap_flags: list[str] = []
-    if budget_ranges and global_min is not None and global_max is not None:
-        spread = global_max - global_min
-        if global_max > 0 and (spread / global_max) > 0.4:
-            gap_flags.append("budget_gap")
-        if budget_overlap is None:
-            gap_flags.append("no_budget_overlap")
-
-    summary = "Group preference summary is based on current responses."
-    return {
-        "summary": summary,
-        "budget_overlap": budget_overlap,
-        "dietary_union": dietary_union,
-        "style_distribution": style_distribution,
-        "gap_flags": gap_flags,
-    }
 
 
 @router.post("/{trip_id}/preferences", status_code=201)
@@ -151,14 +113,17 @@ async def get_preference_summary(
 
     prefs_result = await db.execute(select(Preference).where(Preference.trip_id == trip_uuid))
     preferences = prefs_result.scalars().all()
-    summary = _aggregate(preferences)
+    summary = aggregate_preferences(preferences)
 
     total_members = await db.execute(select(TripMember).where(TripMember.trip_id == trip_uuid))
     total_count = len(total_members.scalars().all())
 
+    show_demo_hint = len(preferences) < 2 and total_count >= 1
+
     return {
         "total_members": total_count,
         "responded": len(preferences),
+        "show_demo_hint": show_demo_hint,
         **summary,
         "ai_summary": None,
     }
@@ -202,4 +167,4 @@ async def get_ai_synthesis(
         result = await synthesize_preferences(payload)
         return result
     except Exception:
-        return _aggregate(preferences)
+        return aggregate_preferences(preferences)

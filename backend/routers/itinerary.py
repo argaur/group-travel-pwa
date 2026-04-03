@@ -2,16 +2,50 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from typing import Optional
+from typing import Any, Optional
 from datetime import time
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user
 from database import get_db
-from models.db import ItineraryItem, TripMember
+from models.db import ItineraryComment, ItineraryItem, User
+from routers.guards import require_organizer, require_preferences_submitted, require_user_is_trip_member_user
+from services.ai import suggest_itinerary
 
 router = APIRouter()
+
+# Demo fallback when AI is unavailable
+SAMPLE_AI_ITINERARY: dict[str, Any] = {
+    "day_summary": "A relaxed pace balancing one cultural block and downtime.",
+    "blocks": [
+        {
+            "slot": "morning",
+            "title": "Local breakfast + waterfront walk",
+            "location": "Old quarter",
+            "estimated_duration": "2h",
+            "cost_estimate_inr": 400,
+            "why_it_fits": "Easy start; works for mixed energy levels.",
+        },
+        {
+            "slot": "afternoon",
+            "title": "Museum or café hop (pick one)",
+            "location": "Central district",
+            "estimated_duration": "3h",
+            "cost_estimate_inr": 800,
+            "why_it_fits": "Optional split without losing the group thread.",
+        },
+        {
+            "slot": "evening",
+            "title": "Shared dinner — veg-forward options nearby",
+            "location": "Market street",
+            "estimated_duration": "2h",
+            "cost_estimate_inr": 1200,
+            "why_it_fits": "Aligns with typical dietary spread in group polls.",
+        },
+    ],
+    "source": "sample",
+}
 
 
 class ItineraryItemCreate(BaseModel):
@@ -22,13 +56,17 @@ class ItineraryItemCreate(BaseModel):
     cost_estimate: Optional[int] = None  # in paise
     notes: Optional[str] = None
     assigned_to: Optional[str] = None
-    sub_group: Optional[str] = None  # for V2 sub-group planning
+    sub_group: Optional[str] = None
 
 
 class AISuggestRequest(BaseModel):
     day_number: int
     destination: str
-    context: Optional[str] = None  # e.g. "family with 2 kids, prefer relaxed pace"
+    context: Optional[str] = None
+
+
+class CommentCreate(BaseModel):
+    body: str
 
 
 @router.get("/{trip_id}/itinerary")
@@ -38,14 +76,7 @@ async def get_itinerary(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
-    membership = await db.execute(
-        select(TripMember).where(
-            TripMember.trip_id == trip_uuid,
-            TripMember.user_id == user.id,
-        )
-    )
-    if membership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+    await require_preferences_submitted(db, trip_uuid, user.id)
 
     result = await db.execute(select(ItineraryItem).where(ItineraryItem.trip_id == trip_uuid))
     items = result.scalars().all()
@@ -75,14 +106,11 @@ async def add_itinerary_item(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
-    membership = await db.execute(
-        select(TripMember).where(
-            TripMember.trip_id == trip_uuid,
-            TripMember.user_id == user.id,
-        )
-    )
-    if membership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+    await require_preferences_submitted(db, trip_uuid, user.id)
+    await require_organizer(db, trip_uuid, user.id)
+
+    if body.assigned_to:
+        await require_user_is_trip_member_user(db, trip_uuid, uuid.UUID(body.assigned_to))
 
     item = ItineraryItem(
         trip_id=trip_uuid,
@@ -111,14 +139,11 @@ async def update_itinerary_item(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
-    membership = await db.execute(
-        select(TripMember).where(
-            TripMember.trip_id == trip_uuid,
-            TripMember.user_id == user.id,
-        )
-    )
-    if membership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+    await require_preferences_submitted(db, trip_uuid, user.id)
+    await require_organizer(db, trip_uuid, user.id)
+
+    if body.assigned_to:
+        await require_user_is_trip_member_user(db, trip_uuid, uuid.UUID(body.assigned_to))
 
     item_uuid = uuid.UUID(item_id)
     result = await db.execute(
@@ -145,6 +170,92 @@ async def update_itinerary_item(
 
 
 @router.post("/{trip_id}/itinerary/ai-suggest")
-async def ai_suggest_itinerary(trip_id: str, body: AISuggestRequest):
-    # TODO: call services/ai.py suggest_itinerary()
-    raise NotImplementedError
+async def ai_suggest_itinerary(
+    trip_id: str,
+    body: AISuggestRequest,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    trip_uuid = uuid.UUID(trip_id)
+    await require_organizer(db, trip_uuid, user.id)
+    await require_preferences_submitted(db, trip_uuid, user.id)
+
+    ctx = body.context or "Group leisure trip; balance food sensitivities and downtime."
+    try:
+        raw = await suggest_itinerary(body.day_number, body.destination, ctx)
+        if isinstance(raw, dict) and raw.get("raw"):
+            out = {**SAMPLE_AI_ITINERARY, "note": "AI returned unstructured text; showing sample layout."}
+            out["source"] = "sample"
+            return {"suggested": out, "source": "sample_fallback"}
+        if isinstance(raw, dict):
+            raw["source"] = "ai"
+            return {"suggested": raw, "source": "ai"}
+    except Exception:
+        pass
+    return {"suggested": SAMPLE_AI_ITINERARY, "source": "sample"}
+
+
+@router.get("/{trip_id}/itinerary/items/{item_id}/comments")
+async def list_itinerary_comments(
+    trip_id: str,
+    item_id: str,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    trip_uuid = uuid.UUID(trip_id)
+    await require_preferences_submitted(db, trip_uuid, user.id)
+
+    item_uuid = uuid.UUID(item_id)
+    item_row = await db.execute(
+        select(ItineraryItem).where(ItineraryItem.id == item_uuid, ItineraryItem.trip_id == trip_uuid)
+    )
+    if item_row.scalar_one_or_none() is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+
+    q = await db.execute(
+        select(ItineraryComment, User)
+        .join(User, ItineraryComment.user_id == User.id)
+        .where(ItineraryComment.itinerary_item_id == item_uuid)
+        .order_by(ItineraryComment.created_at)
+    )
+    rows = q.all()
+    return [
+        {
+            "id": str(c.id),
+            "body": c.body,
+            "created_at": c.created_at.isoformat() if c.created_at else None,
+            "user": {"id": str(u.id), "name": u.name, "avatar_url": u.avatar_url},
+        }
+        for c, u in rows
+    ]
+
+
+@router.post("/{trip_id}/itinerary/items/{item_id}/comments", status_code=201)
+async def add_itinerary_comment(
+    trip_id: str,
+    item_id: str,
+    body: CommentCreate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    trip_uuid = uuid.UUID(trip_id)
+    await require_preferences_submitted(db, trip_uuid, user.id)
+
+    item_uuid = uuid.UUID(item_id)
+    item_row = await db.execute(
+        select(ItineraryItem).where(ItineraryItem.id == item_uuid, ItineraryItem.trip_id == trip_uuid)
+    )
+    if item_row.scalar_one_or_none() is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+
+    c = ItineraryComment(
+        trip_id=trip_uuid,
+        itinerary_item_id=item_uuid,
+        user_id=user.id,
+        body=body.body.strip(),
+    )
+    if not c.body:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty comment")
+    db.add(c)
+    await db.flush()
+    return {"id": str(c.id)}

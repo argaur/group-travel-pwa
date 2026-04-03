@@ -19,6 +19,9 @@ class Settings(BaseSettings):
 
     allowed_origins: str = "http://localhost:3000"
 
+    # Google Places API (optional — demo sample data when empty)
+    google_maps_api_key: str = ""
+
     @property
     def origins_list(self) -> list[str]:
         return [o.strip() for o in self.allowed_origins.split(",")]

@@ -1,7 +1,14 @@
 import asyncio
 import json
-from fastapi import APIRouter
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from auth import get_current_user_sse
+from database import get_db
+from routers.guards import get_trip_membership
 
 router = APIRouter()
 
@@ -28,12 +35,20 @@ async def _event_generator(trip_id: str, queue: asyncio.Queue):
 
 
 @router.get("/{trip_id}/stream")
-async def trip_stream(trip_id: str):
+async def trip_stream(
+    trip_id: str,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user_sse),
+):
     """
     SSE endpoint — yields JSON events for live dashboard updates.
-    Events: task_completed | member_joined | vote_cast | expense_added | preference_submitted
-    Client (sse.ts) uses EventSource; reconnects on drop with 3s → 10s → 30s backoff.
+    Events: task_completed | member_joined | vote_cast | expense_added | preference_submitted | leader_transferred
+    Auth: Authorization Bearer or ?token= (required for browser EventSource).
     """
+    trip_uuid = uuid.UUID(trip_id)
+    if await get_trip_membership(db, trip_uuid, user.id) is None:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+
     queue: asyncio.Queue = asyncio.Queue()
     _subscribers.setdefault(trip_id, []).append(queue)
 

@@ -7,6 +7,7 @@ import { useParams } from "next/navigation"
 import { api } from "@/lib/api"
 import { getBackendUserId } from "@/lib/backend-auth"
 import AppShell from "@/components/AppShell"
+import TripPlanningGate from "@/components/TripPlanningGate"
 
 type Expense = {
   id: string
@@ -17,10 +18,10 @@ type Expense = {
   description: string | null
 }
 
-export default function ExpensesPage() {
+function ExpensesContent() {
   const params = useParams<{ tripId: string }>()
   const [expenses, setExpenses] = useState<Expense[]>([])
-  const [amount, setAmount] = useState("")
+  const [amountRupees, setAmountRupees] = useState("")
   const [category, setCategory] = useState("food")
   const [paidBy, setPaidBy] = useState("")
 
@@ -37,14 +38,17 @@ export default function ExpensesPage() {
 
   async function addExpense(e: React.FormEvent) {
     e.preventDefault()
+    const rupees = Number(amountRupees)
+    const paise = Math.round(rupees * 100)
     await api.post(`/trips/${params.tripId}/expenses`, {
-      amount: Number(amount),
+      amount: paise,
       category,
       paid_by: paidBy,
       split_type: "equal",
     })
-    setAmount("")
-    setPaidBy("")
+    setAmountRupees("")
+    const id = getBackendUserId()
+    if (id) setPaidBy(id)
     load()
   }
 
@@ -60,11 +64,12 @@ export default function ExpensesPage() {
           <h2 className="text-lg font-semibold">Add expense</h2>
           <input
             className="w-full border border-black/10 rounded-xl px-3 py-2"
-            placeholder="Amount (paise)"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            placeholder="Amount (INR)"
+            value={amountRupees}
+            onChange={(e) => setAmountRupees(e.target.value)}
             type="number"
             min={0}
+            step="0.01"
             required
           />
           <input
@@ -112,5 +117,14 @@ export default function ExpensesPage() {
         </div>
       </div>
     </AppShell>
+  )
+}
+
+export default function ExpensesPage() {
+  const params = useParams<{ tripId: string }>()
+  return (
+    <TripPlanningGate tripId={params.tripId}>
+      <ExpensesContent />
+    </TripPlanningGate>
   )
 }

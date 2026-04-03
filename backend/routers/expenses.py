@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
 from sqlalchemy import select
@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import get_current_user
 from database import get_db
 from models.db import Expense, ExpenseSplit, TripMember, User
+from routers.guards import require_preferences_submitted
 from routers.stream import publish
 
 router = APIRouter()
@@ -31,14 +32,7 @@ async def log_expense(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
-    membership = await db.execute(
-        select(TripMember).where(
-            TripMember.trip_id == trip_uuid,
-            TripMember.user_id == user.id,
-        )
-    )
-    if membership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+    await require_preferences_submitted(db, trip_uuid, user.id)
 
     paid_by = uuid.UUID(body.paid_by)
     paid_member = await db.execute(
@@ -103,14 +97,7 @@ async def list_expenses(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
-    membership = await db.execute(
-        select(TripMember).where(
-            TripMember.trip_id == trip_uuid,
-            TripMember.user_id == user.id,
-        )
-    )
-    if membership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+    await require_preferences_submitted(db, trip_uuid, user.id)
 
     query = select(Expense).where(Expense.trip_id == trip_uuid)
     if category:
@@ -138,14 +125,7 @@ async def expense_summary(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
-    membership = await db.execute(
-        select(TripMember).where(
-            TripMember.trip_id == trip_uuid,
-            TripMember.user_id == user.id,
-        )
-    )
-    if membership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+    await require_preferences_submitted(db, trip_uuid, user.id)
 
     paid_result = await db.execute(select(Expense).where(Expense.trip_id == trip_uuid))
     expenses = paid_result.scalars().all()
@@ -180,14 +160,7 @@ async def settlement(
     user=Depends(get_current_user),
 ):
     trip_uuid = uuid.UUID(trip_id)
-    membership = await db.execute(
-        select(TripMember).where(
-            TripMember.trip_id == trip_uuid,
-            TripMember.user_id == user.id,
-        )
-    )
-    if membership.scalar_one_or_none() is None:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
+    await require_preferences_submitted(db, trip_uuid, user.id)
 
     summary = await expense_summary(trip_id, db=db, user=user)
     balances = {item["user_id"]: item["net"] for item in summary}

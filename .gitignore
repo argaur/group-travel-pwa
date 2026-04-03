@@ -20,6 +20,7 @@ backend/venv/
 backend/*.egg-info/
 
 # ── General ───────────────────────────────────────────────────────────────────
+.next/
 .DS_Store
 Thumbs.db
 *.log

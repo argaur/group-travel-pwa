@@ -11,7 +11,9 @@ Flow:
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import Depends, HTTPException, status
+from typing import Optional
+
+from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError, jwt
 from sqlalchemy import select
@@ -69,6 +71,39 @@ async def get_current_user(
     try:
         payload = jwt.decode(
             credentials.credentials,
+            settings.secret_key,
+            algorithms=[settings.algorithm],
+        )
+        user_id: str | None = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    result = await db.execute(select(User).where(User.id == uuid.UUID(user_id)))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise credentials_exception
+    return user
+
+
+async def get_current_user_sse(
+    token: Optional[str] = Query(None, description="JWT for EventSource clients (no Auth header support)"),
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Same as get_current_user but accepts Bearer header OR ?token= for SSE."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or expired token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    raw = credentials.credentials if credentials else token
+    if not raw:
+        raise credentials_exception
+    try:
+        payload = jwt.decode(
+            raw,
             settings.secret_key,
             algorithms=[settings.algorithm],
         )
