@@ -30,3 +30,22 @@ export function getBackendUserId(): string | null {
   if (typeof window === "undefined") return null
   return window.sessionStorage.getItem(USER_KEY)
 }
+
+export async function ensureBackendToken(): Promise<string | null> {
+  if (typeof window === "undefined") return null
+
+  const existing = getBackendToken()
+  if (existing) return existing
+
+  const res = await fetch("/api/backend-token", { method: "POST" })
+  const data = await res.json().catch(() => ({}))
+
+  if (!res.ok || !data?.access_token) {
+    throw new Error("Could not establish a backend session.")
+  }
+
+  setBackendToken(data.access_token)
+  if (data?.user_id) setBackendUserId(data.user_id)
+
+  return data.access_token
+}

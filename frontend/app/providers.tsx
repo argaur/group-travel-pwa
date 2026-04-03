@@ -2,7 +2,7 @@
 
 import { SessionProvider, useSession } from "next-auth/react"
 import { useEffect } from "react"
-import { getBackendToken, setBackendToken, setBackendUserId } from "@/lib/backend-auth"
+import { ensureBackendToken, getBackendToken } from "@/lib/backend-auth"
 
 function BackendTokenBridge() {
   const { status } = useSession()
@@ -11,13 +11,7 @@ function BackendTokenBridge() {
     if (status !== "authenticated") return
     if (getBackendToken()) return
 
-    fetch("/api/backend-token", { method: "POST" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.access_token) setBackendToken(data.access_token)
-        if (data?.user_id) setBackendUserId(data.user_id)
-      })
-      .catch(() => {})
+    ensureBackendToken().catch(() => {})
   }, [status])
 
   return null

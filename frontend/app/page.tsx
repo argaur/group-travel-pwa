@@ -1,4 +1,12 @@
-export default function Home() {
+import { redirect } from "next/navigation"
+import { auth } from "@/auth"
+
+export default async function Home() {
+  const session = await auth()
+  if (session?.user) {
+    redirect("/dashboard")
+  }
+
   return (
     <div className="min-h-screen px-8 py-16">
       <div className="max-w-4xl mx-auto">
@@ -25,7 +33,7 @@ export default function Home() {
             Create a trip
           </a>
           <a
-            href="/auth/signin?callbackUrl=/"
+            href="/auth/signin?callbackUrl=/dashboard"
             className="rounded-full border border-black/10 px-5 py-2"
           >
             Sign in

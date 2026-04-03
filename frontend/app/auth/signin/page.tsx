@@ -1,12 +1,22 @@
 "use client"
 
-import { signIn } from "next-auth/react"
+import { signIn, useSession } from "next-auth/react"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 
 export default function SignInPage() {
+  const router = useRouter()
+  const { status } = useSession()
   const callbackUrl =
     typeof window === "undefined"
-      ? "/trips/new"
-      : new URLSearchParams(window.location.search).get("callbackUrl") ?? "/trips/new"
+      ? "/dashboard"
+      : new URLSearchParams(window.location.search).get("callbackUrl") ?? "/dashboard"
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace(callbackUrl)
+    }
+  }, [status, router, callbackUrl])
 
   return (
     <div className="min-h-screen flex items-center justify-center px-6">

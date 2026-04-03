@@ -4,11 +4,13 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { api } from "@/lib/api"
+import { ensureBackendToken } from "@/lib/backend-auth"
 
 export default function NewTripPage() {
   const router = useRouter()
   const { status } = useSession()
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -22,8 +24,17 @@ export default function NewTripPage() {
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault()
+    setError(null)
+
+    if (status !== "authenticated") {
+      router.push("/auth/signin?callbackUrl=/trips/new")
+      return
+    }
+
     setLoading(true)
     try {
+      await ensureBackendToken()
+
       const trip = await api.post<{ id: string }>("/trips", {
         name,
         destination: destination || null,
@@ -35,6 +46,8 @@ export default function NewTripPage() {
         {}
       )
       router.push(`/trips/${trip.id}/join?token=${invite.invite_token}`)
+    } catch {
+      setError("Could not create trip. Please sign in again and retry.")
     } finally {
       setLoading(false)
     }
@@ -94,6 +107,7 @@ export default function NewTripPage() {
           >
             {loading ? "Creating..." : "Create trip"}
           </button>
+          {error ? <p className="text-sm text-red-600">{error}</p> : null}
         </form>
       </div>
     </div>
