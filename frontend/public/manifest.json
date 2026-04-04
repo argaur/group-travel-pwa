@@ -1,14 +1,19 @@
 {
-  "name": "Group Travel Planning Platform",
-  "short_name": "GroupTrip",
-  "description": "AI-native group trip coordination — from 'let's go!' to final expense settlement",
+  "name": "Trivo",
+  "short_name": "Trivo",
+  "description": "Plan together. Travel better. — Group trips, done with calm.",
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#0f1222",
+  "theme_color": "#ff8a6b",
   "categories": ["travel", "productivity"],
   "icons": [
+    {
+      "src": "/icons/trivo-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
     {
       "src": "/icons/icon-192.png",
       "sizes": "192x192",

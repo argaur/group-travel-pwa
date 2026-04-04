@@ -20,7 +20,7 @@ AI-native group trip coordination Progressive Web App. Solves silent budget misa
 | Frontend | Next.js 14 + next-pwa | Vercel |
 | Backend | FastAPI (Python) | Railway |
 | Database | PostgreSQL / Neon | Neon serverless |
-| AI | Codex API (Codex-sonnet-4-6) | Anthropic |
+| AI | Claude API (claude-sonnet-4-6) | Anthropic |
 | Auth | Auth.js | — |
 | Payments | Razorpay (UPI) | — |
 | Realtime | FastAPI SSE | Railway (backend) |
@@ -41,7 +41,7 @@ group-travel-pwa/
 │   ├── models/
 │   ├── services/
 │   └── main.py
-└── AGENTS.md
+└── CLAUDE.md / AGENTS.md
 ```
 
 ---
@@ -50,7 +50,7 @@ group-travel-pwa/
 
 1. WhatsApp invite flow (Web Share API)
 2. Anonymous preference survey (budget, dietary, trip style)
-3. Codex API preference synthesis
+3. Claude API preference synthesis
 4. Group dashboard with SSE live updates
 5. Task board with push notifications
 6. Basic expense tracking + settlement

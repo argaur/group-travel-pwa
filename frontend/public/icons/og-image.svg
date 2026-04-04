@@ -1,0 +1,81 @@
+<svg viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" width="1200" height="630">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ff8a6b"/>
+      <stop offset="100%" stop-color="#ff6b9a"/>
+    </linearGradient>
+    <linearGradient id="text-g" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#ff8a6b"/>
+      <stop offset="50%" stop-color="#ff6b9a"/>
+      <stop offset="100%" stop-color="#9a8cff"/>
+    </linearGradient>
+    <radialGradient id="orb1" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff8a6b" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#ff8a6b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="orb2" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#9a8cff" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#9a8cff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0f1222"/>
+
+  <!-- Atmosphere orbs -->
+  <ellipse cx="200" cy="180" rx="320" ry="280" fill="url(#orb1)"/>
+  <ellipse cx="1050" cy="480" rx="280" ry="240" fill="url(#orb2)"/>
+
+  <!-- Icon mark (left side) -->
+  <g transform="translate(96, 195)">
+    <rect width="240" height="240" rx="48" fill="#ffffff" fill-opacity="0.06"/>
+    <!-- T crossbar -->
+    <rect x="40" y="72" width="160" height="16" rx="8" fill="url(#g)"/>
+    <!-- T stem -->
+    <rect x="112" y="72" width="16" height="88" rx="8" fill="url(#g)"/>
+    <!-- Pin -->
+    <circle cx="120" cy="178" r="20" fill="url(#g)"/>
+    <circle cx="120" cy="178" r="9" fill="#0f1222"/>
+    <!-- Endpoint dots -->
+    <circle cx="40" cy="80" r="9" fill="url(#g)"/>
+    <circle cx="200" cy="80" r="9" fill="url(#g)"/>
+  </g>
+
+  <!-- Brand name -->
+  <text
+    x="396"
+    y="348"
+    font-family="Georgia, 'Times New Roman', serif"
+    font-style="italic"
+    font-weight="700"
+    font-size="148"
+    letter-spacing="8"
+    fill="url(#text-g)"
+  >TRIVO</text>
+
+  <!-- Tagline -->
+  <text
+    x="398"
+    y="410"
+    font-family="Arial, Helvetica, sans-serif"
+    font-weight="300"
+    font-size="26"
+    letter-spacing="4"
+    fill="#ffffff"
+    fill-opacity="0.45"
+  >PLAN TOGETHER. TRAVEL BETTER.</text>
+
+  <!-- Decorative coordinate line -->
+  <text
+    x="398"
+    y="478"
+    font-family="Courier New, monospace"
+    font-size="16"
+    letter-spacing="2"
+    fill="#ffffff"
+    fill-opacity="0.2"
+  >28°36'N 77°13'E — GROUP TRAVEL COORDINATION</text>
+
+  <!-- Bottom accent line -->
+  <rect x="396" y="500" width="64" height="2" rx="1" fill="url(#g)"/>
+</svg>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { Fraunces, DM_Sans } from "next/font/google";
 import "./globals.css";
@@ -26,8 +26,37 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "GroupTrip",
-  description: "AI-native group trip coordination",
+  title: {
+    default: "Trivo — Plan together. Travel better.",
+    template: "%s | Trivo",
+  },
+  description: "Group trips, done with calm. Anonymous budgets, shared tasks, AI synthesis — one place for everything.",
+  applicationName: "Trivo",
+  keywords: ["group travel", "trip planning", "travel coordination", "group trips"],
+  openGraph: {
+    title: "Trivo — Plan together. Travel better.",
+    description: "Group trips, done with calm.",
+    siteName: "Trivo",
+    images: [{ url: "/icons/og-image.svg", width: 1200, height: 630 }],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Trivo",
+    description: "Group trips, done with calm.",
+  },
+  icons: {
+    icon: "/icons/trivo-icon.svg",
+    apple: "/icons/trivo-icon.svg",
+  },
+  manifest: "/manifest.json",
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#ff8a6b",
 };
 
 export default function RootLayout({
