@@ -25,6 +25,7 @@ export type SSEEvent =
         new_leader_name: string
       }
     }
+  | { type: "rsvp_updated"; data: { user_id: string; rsvp_status: string } }
 
 const BACKOFF_MS = [3_000, 10_000, 30_000]
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"
@@ -36,6 +37,7 @@ const EVENT_TYPES: SSEEvent["type"][] = [
   "expense_added",
   "preference_submitted",
   "leader_transferred",
+  "rsvp_updated",
 ]
 
 export function connectTripStream(
