@@ -1,7 +1,7 @@
 """add rsvp status to trip_members and date_blocks table
 
 Revision ID: a1b2c3d4e5f6
-Revises: 5c1b2f1f3a12
+Revises: 8d9e1fcb2a44
 Create Date: 2026-04-04 00:00:00.000000
 
 """
@@ -11,7 +11,7 @@ from alembic import op
 import sqlalchemy as sa
 
 revision: str = "a1b2c3d4e5f6"
-down_revision: Union[str, None] = "5c1b2f1f3a12"
+down_revision: Union[str, None] = "8d9e1fcb2a44"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
