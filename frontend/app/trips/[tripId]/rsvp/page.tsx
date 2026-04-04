@@ -54,7 +54,7 @@ export default function RSVPPage() {
     const disconnect = connectTripStream(params.tripId, (event) => {
       if (event.type === "rsvp_updated") {
         // Update the specific member's status in state without full reload
-        const { user_id, status } = event.data as { user_id: string; status: string }
+        const { user_id, rsvp_status: status } = event.data
         setMembers((prev) =>
           prev.map((m) =>
             m.user_id === user_id
