@@ -259,3 +259,47 @@ async def add_itinerary_comment(
     db.add(c)
     await db.flush()
     return {"id": str(c.id)}
+
+
+
+class ItemPlaceUpdate(BaseModel):
+    place_id: str
+    place_name: str
+    place_photo_url: Optional[str] = None
+    place_rating: Optional[float] = None
+
+
+@router.put("/{trip_id}/itinerary/items/{item_id}/place")
+async def set_item_place(
+    trip_id: str,
+    item_id: str,
+    body: ItemPlaceUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    trip_uuid = uuid.UUID(trip_id)
+    await require_organizer(db, trip_uuid, user.id)
+
+    item_uuid = uuid.UUID(item_id)
+    result = await db.execute(
+        select(ItineraryItem).where(
+            ItineraryItem.id == item_uuid,
+            ItineraryItem.trip_id == trip_uuid,
+        )
+    )
+    item = result.scalar_one_or_none()
+    if item is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
+
+    item.place_id = body.place_id
+    item.place_name = body.place_name
+    item.place_photo_url = body.place_photo_url
+    item.place_rating = body.place_rating
+
+    return {
+        "id": str(item.id),
+        "place_id": item.place_id,
+        "place_name": item.place_name,
+        "place_photo_url": item.place_photo_url,
+        "place_rating": float(item.place_rating) if item.place_rating is not None else None,
+    }

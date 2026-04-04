@@ -1,69 +1,76 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { api } from "@/lib/api"
 import { ensureBackendToken } from "@/lib/backend-auth"
+import WizardShell from "@/components/wizard/WizardShell"
+import OptionTile from "@/components/wizard/OptionTile"
+import PlaceSearchInput, { type PlaceResult } from "@/components/places/PlaceSearchInput"
+import PlaceCard from "@/components/places/PlaceCard"
 
-type PlaceHit = {
-  place_id: string
-  name: string
-  formatted_address?: string | null
-}
+const STEPS = ["Trip basics", "Destination", "Dates & size"]
+
+const TRIP_TYPES = [
+  { value: "leisure", label: "Leisure", icon: "🌴", description: "Relax, explore, unwind" },
+  { value: "adventure", label: "Adventure", icon: "🧗", description: "Hike, trek, or thrill-seek" },
+  { value: "beach", label: "Beach", icon: "🏖️", description: "Sun, sand, and sea" },
+  { value: "mountain", label: "Mountain", icon: "⛰️", description: "High altitudes & cool air" },
+  { value: "family", label: "Family", icon: "👨‍👩‍👧", description: "Kid-friendly & inclusive" },
+  { value: "office", label: "Office trip", icon: "💼", description: "Team building & retreats" },
+]
 
 export default function NewTripPage() {
   const router = useRouter()
   const { status } = useSession()
+
+  // Wizard state
+  const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Step 0 — basics
+  const [name, setName] = useState("")
+  const [tripType, setTripType] = useState("leisure")
+
+  // Step 1 — destination
+  const [destination, setDestination] = useState("")
+  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null)
+
+  // Step 2 — dates & size
+  const [startDate, setStartDate] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const [groupSize, setGroupSize] = useState("")
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/auth/signin?callbackUrl=/trips/new")
     }
   }, [status, router])
-  const [name, setName] = useState("")
-  const [destination, setDestination] = useState("")
-  const [placeId, setPlaceId] = useState<string | null>(null)
-  const [tripType, setTripType] = useState("leisure")
-  const [groupSize, setGroupSize] = useState("")
-  const [searchHits, setSearchHits] = useState<PlaceHit[]>([])
-  const [searching, setSearching] = useState(false)
 
-  const runPlaceSearch = useCallback(async (q: string) => {
-    if (q.trim().length < 2) {
-      setSearchHits([])
-      return
-    }
-    setSearching(true)
-    try {
-      await ensureBackendToken()
-      const res = await api.get<{ results: PlaceHit[] }>(
-        `/places/search?q=${encodeURIComponent(q.trim())}`,
-      )
-      setSearchHits(res.results?.slice(0, 6) ?? [])
-    } catch {
-      setSearchHits([])
-    } finally {
-      setSearching(false)
-    }
-  }, [])
+  function handlePlaceSelect(place: PlaceResult) {
+    setSelectedPlace(place)
+    setDestination(place.name)
+  }
 
-  useEffect(() => {
-    const t = setTimeout(() => runPlaceSearch(destination), 350)
-    return () => clearTimeout(t)
-  }, [destination, runPlaceSearch])
+  function clearPlace() {
+    setSelectedPlace(null)
+    setDestination("")
+  }
 
-  async function onCreate(e: React.FormEvent) {
-    e.preventDefault()
-    setError(null)
+  function nextDisabled() {
+    if (step === 0) return !name.trim()
+    return false
+  }
 
+  async function handleSubmit() {
     if (status !== "authenticated") {
       router.push("/auth/signin?callbackUrl=/trips/new")
       return
     }
 
+    setError(null)
     setLoading(true)
     try {
       await ensureBackendToken()
@@ -73,8 +80,19 @@ export default function NewTripPage() {
         destination: destination || null,
         trip_type: tripType,
         group_size_estimate: groupSize ? Number(groupSize) : null,
+        start_date: startDate || null,
+        end_date: endDate || null,
       })
-      void placeId // reserved for future: persist place on trip
+
+      if (selectedPlace) {
+        await api.put(`/trips/${trip.id}/place`, {
+          place_id: selectedPlace.place_id,
+          place_name: selectedPlace.name,
+          place_photo_url: selectedPlace.primary_photo_url ?? null,
+          place_rating: selectedPlace.rating ?? null,
+        }).catch(() => {/* non-blocking */})
+      }
+
       const invite = await api.post<{ invite_token: string }>(
         `/trips/${trip.id}/invite`,
         {},
@@ -87,95 +105,171 @@ export default function NewTripPage() {
     }
   }
 
+  const stepTitles = [
+    "Name your adventure",
+    "Where are you headed?",
+    "When & how many?",
+  ]
+  const stepSubtitles = [
+    "Pick a name that gets everyone excited.",
+    "Search for a place or type a destination freely.",
+    "Rough dates and headcount help with planning.",
+  ]
+
   return (
-    <div className="min-h-screen px-6 py-10">
-      <div className="max-w-lg mx-auto card p-6">
-        <h1 className="text-2xl font-semibold">Create a trip</h1>
-        <p className="text-sm text-[var(--muted)] mt-1">
-          Set the basics, then invite your group. Destination search uses Google Places when
-          configured (sample data otherwise).
-        </p>
-        <form onSubmit={onCreate} className="mt-6 space-y-4">
+    <WizardShell
+      steps={STEPS}
+      currentStep={step}
+      title={stepTitles[step]}
+      subtitle={stepSubtitles[step]}
+      onBack={() => setStep((s) => s - 1)}
+      onNext={() => setStep((s) => s + 1)}
+      onSubmit={handleSubmit}
+      nextDisabled={nextDisabled()}
+      submitDisabled={loading}
+      loading={loading}
+      submitLabel="Create trip & get invite link"
+    >
+      {/* ── Step 0: Basics ───────────────────────────────────────── */}
+      {step === 0 && (
+        <div className="space-y-6">
           <div>
-            <label className="block text-sm mb-1">Trip name</label>
+            <label
+              className="block text-[12px] uppercase tracking-widest text-[var(--muted)] mb-2"
+              style={{ fontFamily: "var(--font-body)" }}
+            >
+              Trip name *
+            </label>
             <input
-              className="w-full border border-black/10 rounded-xl px-3 py-2"
+              className="w-full border border-[var(--line)] rounded-[4px] px-4 py-3 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
+              style={{ fontFamily: "var(--font-body)", color: "var(--ink)" }}
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
+              placeholder="e.g. Goa Weekend Escape"
+              autoFocus
             />
           </div>
+
           <div>
-            <label className="block text-sm mb-1">Destination (optional)</label>
-            <input
-              className="w-full border border-black/10 rounded-xl px-3 py-2"
-              value={destination}
-              onChange={(e) => {
-                setDestination(e.target.value)
-                setPlaceId(null)
-              }}
-              placeholder="Type to search places…"
-            />
-            {searching && (
-              <p className="text-xs text-[var(--muted)] mt-1">Searching…</p>
-            )}
-            {searchHits.length > 0 && (
-              <ul className="mt-2 border border-black/10 rounded-xl overflow-hidden text-sm max-h-48 overflow-y-auto">
-                {searchHits.map((h) => (
-                  <li key={h.place_id}>
-                    <button
-                      type="button"
-                      className="w-full text-left px-3 py-2 hover:bg-black/[0.04]"
-                      onClick={() => {
-                        setDestination(h.name)
-                        setPlaceId(h.place_id)
-                        setSearchHits([])
-                      }}
-                    >
-                      <span className="font-medium">{h.name}</span>
-                      {h.formatted_address && (
-                        <span className="block text-xs text-[var(--muted)]">
-                          {h.formatted_address}
-                        </span>
-                      )}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm mb-1">Trip type</label>
-            <select
-              className="w-full border border-black/10 rounded-xl px-3 py-2"
-              value={tripType}
-              onChange={(e) => setTripType(e.target.value)}
+            <label
+              className="block text-[12px] uppercase tracking-widest text-[var(--muted)] mb-3"
+              style={{ fontFamily: "var(--font-body)" }}
             >
-              <option value="leisure">Leisure</option>
-              <option value="family">Family</option>
-              <option value="adventure">Adventure</option>
-              <option value="office">Office</option>
-            </select>
+              Trip type
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              {TRIP_TYPES.map((t) => (
+                <OptionTile
+                  key={t.value}
+                  label={t.label}
+                  description={t.description}
+                  icon={t.icon}
+                  selected={tripType === t.value}
+                  onClick={() => setTripType(t.value)}
+                />
+              ))}
+            </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Step 1: Destination ──────────────────────────────────── */}
+      {step === 1 && (
+        <div className="space-y-4">
+          {selectedPlace ? (
+            <PlaceCard placeId={selectedPlace.place_id} onDismiss={clearPlace} />
+          ) : (
+            <>
+              <PlaceSearchInput
+                value={destination}
+                onSelect={handlePlaceSelect}
+                onChange={setDestination}
+                placeholder="Search Google Places…"
+              />
+              {destination && (
+                <p
+                  className="text-[11px] text-[var(--muted)]"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  Type to search, or continue with this text as-is.
+                </p>
+              )}
+            </>
+          )}
+
+          <p
+            className="text-[12px] text-[var(--muted)] pt-2"
+            style={{ fontFamily: "var(--font-body)" }}
+          >
+            Destination is optional — you can decide later with the group.
+          </p>
+        </div>
+      )}
+
+      {/* ── Step 2: Dates & size ─────────────────────────────────── */}
+      {step === 2 && (
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label
+                className="block text-[12px] uppercase tracking-widest text-[var(--muted)] mb-2"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
+                Start date
+              </label>
+              <input
+                type="date"
+                className="w-full border border-[var(--line)] rounded-[4px] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
+                style={{ fontFamily: "var(--font-body)" }}
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
+            <div>
+              <label
+                className="block text-[12px] uppercase tracking-widest text-[var(--muted)] mb-2"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
+                End date
+              </label>
+              <input
+                type="date"
+                className="w-full border border-[var(--line)] rounded-[4px] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
+                style={{ fontFamily: "var(--font-body)" }}
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+          </div>
+
           <div>
-            <label className="block text-sm mb-1">Group size estimate</label>
+            <label
+              className="block text-[12px] uppercase tracking-widest text-[var(--muted)] mb-2"
+              style={{ fontFamily: "var(--font-body)" }}
+            >
+              Group size estimate
+            </label>
             <input
-              className="w-full border border-black/10 rounded-xl px-3 py-2"
+              className="w-full border border-[var(--line)] rounded-[4px] px-4 py-3 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
+              style={{ fontFamily: "var(--font-body)", color: "var(--ink)" }}
               value={groupSize}
               onChange={(e) => setGroupSize(e.target.value)}
               type="number"
               min={1}
+              placeholder="e.g. 6"
             />
           </div>
-          <button
-            className="w-full rounded-full bg-[var(--ink)] text-white px-4 py-2"
-            disabled={loading}
-          >
-            {loading ? "Creating..." : "Create trip"}
-          </button>
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-        </form>
-      </div>
-    </div>
+
+          {error && (
+            <p
+              className="text-[13px] text-red-600"
+              style={{ fontFamily: "var(--font-body)" }}
+            >
+              {error}
+            </p>
+          )}
+        </div>
+      )}
+    </WizardShell>
   )
 }

@@ -13,6 +13,7 @@ from sqlalchemy import (
     Enum,
     ForeignKey,
     Integer,
+    Numeric,
     String,
     Text,
     Time,
@@ -68,6 +69,10 @@ class Trip(Base):
         default="planning",
         nullable=False,
     )
+    place_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    place_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    place_photo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    place_rating: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
@@ -96,6 +101,8 @@ class TripMember(Base):
     )
     joined_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     preference_submitted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    rsvp_status: Mapped[str] = mapped_column(String(20), default="pending", nullable=False, server_default="pending")
+    rsvp_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     trip: Mapped["Trip"] = relationship("Trip", back_populates="members")
     user: Mapped["User"] = relationship("User", back_populates="memberships")
@@ -227,6 +234,10 @@ class ItineraryItem(Base):
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
     assigned_to: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     sub_group: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    place_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    place_name: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    place_photo_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    place_rating: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     trip: Mapped["Trip"] = relationship("Trip", back_populates="itinerary_items")
@@ -249,6 +260,19 @@ class ItineraryComment(Base):
 
     itinerary_item: Mapped["ItineraryItem"] = relationship("ItineraryItem", back_populates="comments")
     user: Mapped["User"] = relationship("User", back_populates="itinerary_comments")
+
+
+# ── Date Blocks ───────────────────────────────────────────────────────────────
+
+class DateBlock(Base):
+    __tablename__ = "date_blocks"
+    __table_args__ = (UniqueConstraint("trip_id", "user_id", "blocked_date", name="uq_date_block"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    trip_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    blocked_date: Mapped[date] = mapped_column(Date, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 # ── Push Subscriptions ────────────────────────────────────────────────────────

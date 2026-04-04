@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from config import get_settings
 from database import engine
-from routers import ai_routes, auth, expenses, itinerary, members, places, preferences, push, stream, tasks, trips, votes
+from routers import ai_routes, auth, expenses, itinerary, members, places, preferences, push, rsvp, stream, tasks, trips, votes
 
 settings = get_settings()
 
@@ -44,6 +44,7 @@ app.include_router(itinerary.router,   prefix="/api/v1/trips",       tags=["itin
 app.include_router(expenses.router,    prefix="/api/v1/trips",       tags=["expenses"])
 app.include_router(votes.router,       prefix="/api/v1/trips",       tags=["votes"])
 app.include_router(stream.router,      prefix="/api/v1/trips",       tags=["realtime"])
+app.include_router(rsvp.router,        prefix="/api/v1/trips",       tags=["rsvp"])
 app.include_router(ai_routes.router,   prefix="/api/v1/ai",          tags=["ai"])
 app.include_router(auth.router,        prefix="/api/v1",             tags=["auth"])
 app.include_router(push.router,        prefix="/api/v1",             tags=["push"])

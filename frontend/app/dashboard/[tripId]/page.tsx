@@ -12,6 +12,7 @@ import {
   getBackendUserId,
 } from "@/lib/backend-auth"
 import AppShell from "@/components/AppShell"
+import PlaceCard from "@/components/places/PlaceCard"
 
 type MemberRow = {
   user: { id: string; name: string; avatar_url: string | null }
@@ -47,21 +48,11 @@ type DashboardSummary = {
   }>
 }
 
-type PlaceDetails = {
-  name?: string
-  formatted_address?: string
-  rating?: number
-  user_ratings_total?: number
-  reviews?: Array<{ author?: string; rating?: number; text?: string }>
-  photos?: string[]
-  source?: string
-}
-
-const DEMO_DECISIONS = [
-  { title: "Shortlist destination", status: "3 options · vote open", due: "This week" },
-  { title: "Lock trip dates", status: "Waiting on 2 responses", due: "Next week" },
-  { title: "Book main stay", status: "Research in progress", due: "After dates" },
-]
+const VOTE_TOPICS = [
+  { type: "destination", label: "Destination" },
+  { type: "dates", label: "Dates" },
+  { type: "accommodation", label: "Accommodation" },
+] as const
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error && error.message) {
@@ -78,7 +69,8 @@ export default function DashboardPage() {
   const [pushStatus, setPushStatus] = useState<string | null>(null)
   const [transferTo, setTransferTo] = useState("")
   const [transferMsg, setTransferMsg] = useState<string | null>(null)
-  const [placeCard, setPlaceCard] = useState<PlaceDetails | null>(null)
+  const [placeId, setPlaceId] = useState<string | null>(null)
+  const [voteTallies, setVoteTallies] = useState<Record<string, Record<string, number>>>({})
   const [error, setError] = useState<string | null>(null)
 
   const myId = getBackendUserId()
@@ -97,7 +89,22 @@ export default function DashboardPage() {
       ])
       setSummary(dash)
       setMembers(mems)
-      setError(null) // Clear any previous errors
+      setError(null)
+      // Pick up place_id from trip data if available (set via PUT /trips/{id}/place)
+      setPlaceId((dash.trip as unknown as { place_id?: string }).place_id ?? null)
+
+      // Fetch vote tallies for all topics (non-blocking — silently ignore errors)
+      const tallyResults = await Promise.allSettled(
+        VOTE_TOPICS.map((t) =>
+          api.get<Record<string, number>>(`/trips/${params.tripId}/votes/${t.type}`)
+        )
+      )
+      const tallies: Record<string, Record<string, number>> = {}
+      VOTE_TOPICS.forEach((t, i) => {
+        const r = tallyResults[i]
+        tallies[t.type] = r.status === "fulfilled" ? (r.value ?? {}) : {}
+      })
+      setVoteTallies(tallies)
     } catch (error: unknown) {
       setError(`Failed to load trip data: ${getErrorMessage(error)}`)
       setSummary(null) // Keep summary null to show error UI
@@ -114,7 +121,8 @@ export default function DashboardPage() {
       if (
         event.type === "preference_submitted" ||
         event.type === "member_joined" ||
-        event.type === "leader_transferred"
+        event.type === "leader_transferred" ||
+        event.type === "vote_cast"
       ) {
         load().catch(() => {})
       }
@@ -124,31 +132,6 @@ export default function DashboardPage() {
 
   const title = useMemo(() => summary?.trip.name ?? "Trip dashboard", [summary])
 
-  useEffect(() => {
-    const dest = summary?.trip.destination?.trim()
-    if (!dest) {
-      setPlaceCard(null)
-      return
-    }
-    let cancelled = false
-    ;(async () => {
-      try {
-        await ensureBackendToken()
-        const search = await api.get<{
-          results: Array<{ place_id: string }>
-        }>(`/places/search?q=${encodeURIComponent(dest)}`)
-        const first = search.results?.[0]
-        if (!first?.place_id) return
-        const details = await api.get<PlaceDetails>(`/places/${first.place_id}`)
-        if (!cancelled) setPlaceCard(details)
-      } catch {
-        if (!cancelled) setPlaceCard(null)
-      }
-    })()
-    return () => {
-      cancelled = true
-    }
-  }, [summary?.trip.destination])
 
   async function enablePush() {
     const sub = await subscribeToPush()
@@ -231,21 +214,38 @@ export default function DashboardPage() {
           </div>
 
           <div className="card p-5 space-y-3 animate-fade-up">
-            <h2 className="text-lg font-semibold">Decisions pending (preview)</h2>
-            <p className="text-xs text-[var(--muted)]">
-              Sample board — wire to voting in a later sprint.
-            </p>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">Group decisions</h2>
+              <a
+                href={`/trips/${params.tripId}/vote`}
+                className="text-xs rounded-full border border-black/10 px-3 py-1.5 hover:bg-black/5 transition-colors"
+              >
+                Open voting →
+              </a>
+            </div>
             <ul className="space-y-2">
-              {DEMO_DECISIONS.map((d) => (
-                <li
-                  key={d.title}
-                  className="flex flex-wrap justify-between gap-2 border border-black/5 rounded-2xl px-4 py-3 text-sm"
-                >
-                  <span className="font-medium">{d.title}</span>
-                  <span className="text-[var(--muted)]">{d.status}</span>
-                  <span className="text-xs text-[var(--muted)] w-full">{d.due}</span>
-                </li>
-              ))}
+              {VOTE_TOPICS.map((topic) => {
+                const tally = voteTallies[topic.type] ?? {}
+                const entries = Object.entries(tally)
+                const totalVotes = entries.reduce((s, [, c]) => s + c, 0)
+                const topOption = entries.sort((a, b) => b[1] - a[1])[0]
+                return (
+                  <li
+                    key={topic.type}
+                    className="flex flex-wrap items-center justify-between gap-2 border border-black/5 rounded-2xl px-4 py-3 text-sm"
+                  >
+                    <span className="font-medium">{topic.label}</span>
+                    {totalVotes === 0 ? (
+                      <span className="text-[var(--muted)]">No votes yet</span>
+                    ) : (
+                      <span className="text-[var(--muted)]">
+                        {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
+                        {topOption ? ` · leading: ${topOption[0]}` : ""}
+                      </span>
+                    )}
+                  </li>
+                )
+              })}
             </ul>
           </div>
 
@@ -277,43 +277,10 @@ export default function DashboardPage() {
             </a>
           </div>
 
-          {placeCard && (
+          {placeId && (
             <div className="card p-5 space-y-3 animate-fade-up">
               <h2 className="text-lg font-semibold">Destination intel</h2>
-              <p className="font-medium">{placeCard.name}</p>
-              <p className="text-sm text-[var(--muted)]">{placeCard.formatted_address}</p>
-              {placeCard.rating != null && (
-                <p className="text-sm">
-                  ★ {placeCard.rating}
-                  {placeCard.user_ratings_total != null
-                    ? ` (${placeCard.user_ratings_total} ratings)`
-                    : ""}
-                  {placeCard.source ? ` · ${placeCard.source}` : ""}
-                </p>
-              )}
-              {placeCard.reviews && placeCard.reviews.length > 0 && (
-                <ul className="text-sm space-y-2 border-t border-black/5 pt-3">
-                  {placeCard.reviews.slice(0, 2).map((r, i) => (
-                    <li key={i}>
-                      <span className="font-medium">{r.author}</span>
-                      {r.rating != null ? ` · ${r.rating}★` : ""}: {r.text}
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {placeCard.photos && placeCard.photos.length > 0 && (
-                <div className="flex gap-2 overflow-x-auto pt-2">
-                  {placeCard.photos.slice(0, 3).map((url, i) => (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      key={i}
-                      src={url}
-                      alt=""
-                      className="h-24 w-36 rounded-xl object-cover shrink-0 border border-black/5"
-                    />
-                  ))}
-                </div>
-              )}
+              <PlaceCard placeId={placeId} />
             </div>
           )}
 

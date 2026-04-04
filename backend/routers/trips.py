@@ -25,6 +25,13 @@ class TripCreate(BaseModel):
     group_size_estimate: Optional[int] = None
 
 
+class PlaceUpdate(BaseModel):
+    place_id: str
+    place_name: str
+    place_photo_url: Optional[str] = None
+    place_rating: Optional[float] = None
+
+
 class TripResponse(BaseModel):
     id: str
     name: str
@@ -34,6 +41,10 @@ class TripResponse(BaseModel):
     trip_type: str
     status: str
     created_by: str
+    place_id: Optional[str] = None
+    place_name: Optional[str] = None
+    place_photo_url: Optional[str] = None
+    place_rating: Optional[float] = None
 
 
 @router.post("", response_model=TripResponse, status_code=201)
@@ -66,6 +77,10 @@ async def create_trip(
         trip_type=trip.trip_type,
         status=trip.status,
         created_by=str(trip.created_by),
+        place_id=trip.place_id,
+        place_name=trip.place_name,
+        place_photo_url=trip.place_photo_url,
+        place_rating=float(trip.place_rating) if trip.place_rating is not None else None,
     )
 
 
@@ -123,6 +138,10 @@ async def get_trip(
         trip_type=trip.trip_type,
         status=trip.status,
         created_by=str(trip.created_by),
+        place_id=trip.place_id,
+        place_name=trip.place_name,
+        place_photo_url=trip.place_photo_url,
+        place_rating=float(trip.place_rating) if trip.place_rating is not None else None,
     )
 
 
@@ -165,6 +184,10 @@ async def update_trip(
         trip_type=trip.trip_type,
         status=trip.status,
         created_by=str(trip.created_by),
+        place_id=trip.place_id,
+        place_name=trip.place_name,
+        place_photo_url=trip.place_photo_url,
+        place_rating=float(trip.place_rating) if trip.place_rating is not None else None,
     )
 
 
@@ -261,3 +284,47 @@ async def trip_dashboard_summary(
         },
         "itinerary_preview": itinerary_preview,
     }
+
+
+@router.put("/{trip_id}/place")
+async def set_trip_place(
+    trip_id: str,
+    body: PlaceUpdate,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    trip_uuid = uuid.UUID(trip_id)
+    result = await db.execute(select(Trip).where(Trip.id == trip_uuid))
+    trip = result.scalar_one_or_none()
+    if trip is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
+
+    membership = await db.execute(
+        select(TripMember).where(
+            TripMember.trip_id == trip_uuid,
+            TripMember.user_id == user.id,
+        )
+    )
+    member = membership.scalar_one_or_none()
+    if member is None or member.role != "organizer":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Organizer only")
+
+    trip.place_id = body.place_id
+    trip.place_name = body.place_name
+    trip.place_photo_url = body.place_photo_url
+    trip.place_rating = body.place_rating
+
+    return TripResponse(
+        id=str(trip.id),
+        name=trip.title,
+        destination=trip.destination,
+        start_date=trip.start_date,
+        end_date=trip.end_date,
+        trip_type=trip.trip_type,
+        status=trip.status,
+        created_by=str(trip.created_by),
+        place_id=trip.place_id,
+        place_name=trip.place_name,
+        place_photo_url=trip.place_photo_url,
+        place_rating=float(trip.place_rating) if trip.place_rating is not None else None,
+    )

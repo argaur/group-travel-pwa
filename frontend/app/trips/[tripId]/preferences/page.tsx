@@ -3,34 +3,124 @@
 import { useParams, useRouter } from "next/navigation"
 import { useState } from "react"
 import { api } from "@/lib/api"
+import WizardShell from "@/components/wizard/WizardShell"
+import OptionTile from "@/components/wizard/OptionTile"
 
-const DIETARY = ["veg", "non-veg", "vegan", "jain", "halal", "no restriction"]
-const CONSTRAINTS = ["stroller", "wheelchair", "kitchen access", "early nights"]
+const STEPS = ["Budget", "Food & diet", "Travel style", "Special needs"]
+
+const DIETARY_OPTIONS = [
+  { value: "no restriction", label: "No restriction", icon: "🍽️" },
+  { value: "veg", label: "Vegetarian", icon: "🥗" },
+  { value: "non-veg", label: "Non-veg", icon: "🍗" },
+  { value: "vegan", label: "Vegan", icon: "🌱" },
+  { value: "jain", label: "Jain", icon: "🙏" },
+  { value: "halal", label: "Halal", icon: "☪️" },
+]
+
+const STYLE_OPTIONS = [
+  {
+    value: "relaxed",
+    label: "Relaxed",
+    icon: "😌",
+    description: "Slow mornings, no rush, lots of downtime",
+  },
+  {
+    value: "adventure",
+    label: "Adventure",
+    icon: "🏕️",
+    description: "Active days, physical experiences",
+  },
+  {
+    value: "cultural",
+    label: "Cultural",
+    icon: "🏛️",
+    description: "Museums, local food, hidden gems",
+  },
+  {
+    value: "party",
+    label: "Party",
+    icon: "🎉",
+    description: "Late nights, music, social energy",
+  },
+  {
+    value: "mixed",
+    label: "Mixed",
+    icon: "🎭",
+    description: "A bit of everything — let the group decide",
+  },
+]
+
+const CONSTRAINT_OPTIONS = [
+  { value: "stroller", label: "Stroller-friendly needed", icon: "🍼" },
+  { value: "wheelchair", label: "Wheelchair accessible", icon: "♿" },
+  { value: "kitchen access", label: "Kitchen access required", icon: "🍳" },
+  { value: "early nights", label: "Early nights only", icon: "🌙" },
+]
+
+const BUDGET_PRESETS = [
+  { label: "Budget", range: [1500, 3000], description: "₹1.5k–3k/day" },
+  { label: "Mid-range", range: [3000, 7000], description: "₹3k–7k/day" },
+  { label: "Comfort", range: [7000, 15000], description: "₹7k–15k/day" },
+  { label: "Luxury", range: [15000, 50000], description: "₹15k+/day" },
+]
 
 export default function PreferencesPage() {
   const params = useParams<{ tripId: string }>()
   const router = useRouter()
-  const [budgetMin, setBudgetMin] = useState("5000")
-  const [budgetMax, setBudgetMax] = useState("10000")
-  const [dietary, setDietary] = useState<string[]>([])
-  const [tripStyle, setTripStyle] = useState("relaxed")
-  const [constraints, setConstraints] = useState<string[]>([])
-  const [notes, setNotes] = useState("")
+
+  const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
 
-  function toggle(list: string[], value: string, setter: (v: string[]) => void) {
-    if (list.includes(value)) setter(list.filter((v) => v !== value))
-    else setter([...list, value])
+  // Step 0 — budget
+  const [budgetPreset, setBudgetPreset] = useState<number | null>(null)
+  const [budgetMin, setBudgetMin] = useState("3000")
+  const [budgetMax, setBudgetMax] = useState("7000")
+
+  // Step 1 — dietary
+  const [dietary, setDietary] = useState<string[]>([])
+
+  // Step 2 — trip style
+  const [tripStyle, setTripStyle] = useState("relaxed")
+
+  // Step 3 — constraints + notes
+  const [constraints, setConstraints] = useState<string[]>([])
+  const [notes, setNotes] = useState("")
+
+  function toggleDietary(value: string) {
+    if (value === "no restriction") {
+      setDietary(["no restriction"])
+      return
+    }
+    const filtered = dietary.filter((d) => d !== "no restriction")
+    if (filtered.includes(value)) setDietary(filtered.filter((d) => d !== value))
+    else setDietary([...filtered, value])
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  function toggleConstraint(value: string) {
+    if (constraints.includes(value)) setConstraints(constraints.filter((c) => c !== value))
+    else setConstraints([...constraints, value])
+  }
+
+  function selectBudgetPreset(index: number) {
+    const p = BUDGET_PRESETS[index]
+    setBudgetPreset(index)
+    setBudgetMin(String(p.range[0]))
+    setBudgetMax(String(p.range[1]))
+  }
+
+  function handleCustomBudget(field: "min" | "max", val: string) {
+    setBudgetPreset(null)
+    if (field === "min") setBudgetMin(val)
+    else setBudgetMax(val)
+  }
+
+  async function handleSubmit() {
     setSaving(true)
     try {
       await api.post(`/trips/${params.tripId}/preferences`, {
         budget_min: Number(budgetMin),
         budget_max: Number(budgetMax),
-        dietary,
+        dietary: dietary.length > 0 ? dietary : ["no restriction"],
         trip_style: tripStyle,
         constraints,
         notes: notes || null,
@@ -42,100 +132,165 @@ export default function PreferencesPage() {
     }
   }
 
+  const stepTitles = [
+    "What's your daily budget?",
+    "Any food preferences?",
+    "How do you like to travel?",
+    "Anything else we should know?",
+  ]
+  const stepSubtitles = [
+    "Pick a range that feels right — your response stays anonymous.",
+    "Select all that apply. This helps with restaurant and activity picks.",
+    "Your vibe sets the tone. Only you see this.",
+    "Accessibility needs, constraints, or anything else.",
+  ]
+
+  function nextDisabled() {
+    return false // all steps optional except we just need budget values
+  }
+
   return (
-    <div className="min-h-screen px-6 py-10">
-      <div className="max-w-xl mx-auto card p-6">
-        <h1 className="text-2xl font-semibold">Preference survey</h1>
-        <p className="text-sm text-[var(--muted)] mt-1">
-          Your responses are anonymous to the group.
-        </p>
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="block text-sm mb-1">Budget per day (INR)</label>
-            <div className="flex gap-2">
-              <input
-                className="w-full border border-black/10 rounded-xl px-3 py-2"
-                value={budgetMin}
-                onChange={(e) => setBudgetMin(e.target.value)}
-                type="number"
-                min={0}
+    <WizardShell
+      steps={STEPS}
+      currentStep={step}
+      title={stepTitles[step]}
+      subtitle={stepSubtitles[step]}
+      onBack={() => setStep((s) => s - 1)}
+      onNext={() => setStep((s) => s + 1)}
+      onSubmit={handleSubmit}
+      nextDisabled={nextDisabled()}
+      submitDisabled={saving}
+      loading={saving}
+      submitLabel="Submit preferences"
+    >
+      {/* ── Step 0: Budget ───────────────────────────────────────── */}
+      {step === 0 && (
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-2">
+            {BUDGET_PRESETS.map((p, i) => (
+              <OptionTile
+                key={p.label}
+                label={p.label}
+                description={p.description}
+                selected={budgetPreset === i}
+                onClick={() => selectBudgetPreset(i)}
+                accentColor="var(--accent-coral)"
               />
-              <input
-                className="w-full border border-black/10 rounded-xl px-3 py-2"
-                value={budgetMax}
-                onChange={(e) => setBudgetMax(e.target.value)}
-                type="number"
-                min={0}
-              />
-            </div>
+            ))}
           </div>
+
           <div>
-            <p className="block text-sm mb-1">Dietary</p>
-            <div className="flex flex-wrap gap-2">
-              {DIETARY.map((d) => (
-                <button
-                  type="button"
-                  key={d}
-                  onClick={() => toggle(dietary, d, setDietary)}
-                  className={`px-3 py-1 rounded-full border ${
-                    dietary.includes(d) ? "bg-black text-white" : "border-black/20"
-                  }`}
-                >
-                  {d}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm mb-1">Trip style</label>
-            <select
-              className="w-full border border-black/10 rounded-xl px-3 py-2"
-              value={tripStyle}
-              onChange={(e) => setTripStyle(e.target.value)}
+            <p
+              className="text-[11px] uppercase tracking-widest text-[var(--muted)] mb-2"
+              style={{ fontFamily: "var(--font-body)" }}
             >
-              <option value="adventure">Adventure</option>
-              <option value="relaxed">Relaxed</option>
-              <option value="cultural">Cultural</option>
-              <option value="party">Party</option>
-              <option value="mixed">Mixed</option>
-            </select>
-          </div>
-          <div>
-            <p className="block text-sm mb-1">Constraints</p>
-            <div className="flex flex-wrap gap-2">
-              {CONSTRAINTS.map((c) => (
-                <button
-                  type="button"
-                  key={c}
-                  onClick={() => toggle(constraints, c, setConstraints)}
-                  className={`px-3 py-1 rounded-full border ${
-                    constraints.includes(c)
-                      ? "bg-black text-white"
-                      : "border-black/20"
-                  }`}
+              Or set a custom range (₹/day)
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label
+                  className="block text-[11px] text-[var(--muted)] mb-1"
+                  style={{ fontFamily: "var(--font-body)" }}
                 >
-                  {c}
-                </button>
-              ))}
+                  Min
+                </label>
+                <input
+                  type="number"
+                  className="w-full border border-[var(--line)] rounded-[4px] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
+                  style={{ fontFamily: "var(--font-body)" }}
+                  value={budgetMin}
+                  onChange={(e) => handleCustomBudget("min", e.target.value)}
+                  min={0}
+                />
+              </div>
+              <div>
+                <label
+                  className="block text-[11px] text-[var(--muted)] mb-1"
+                  style={{ fontFamily: "var(--font-body)" }}
+                >
+                  Max
+                </label>
+                <input
+                  type="number"
+                  className="w-full border border-[var(--line)] rounded-[4px] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
+                  style={{ fontFamily: "var(--font-body)" }}
+                  value={budgetMax}
+                  onChange={(e) => handleCustomBudget("max", e.target.value)}
+                  min={0}
+                />
+              </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Step 1: Dietary ─────────────────────────────────────── */}
+      {step === 1 && (
+        <div className="space-y-2">
+          {DIETARY_OPTIONS.map((d) => (
+            <OptionTile
+              key={d.value}
+              label={d.label}
+              icon={d.icon}
+              selected={dietary.includes(d.value)}
+              onClick={() => toggleDietary(d.value)}
+              accentColor="var(--accent-pink)"
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── Step 2: Trip style ──────────────────────────────────── */}
+      {step === 2 && (
+        <div className="space-y-2">
+          {STYLE_OPTIONS.map((s) => (
+            <OptionTile
+              key={s.value}
+              label={s.label}
+              description={s.description}
+              icon={s.icon}
+              selected={tripStyle === s.value}
+              onClick={() => setTripStyle(s.value)}
+              accentColor="var(--accent-lilac)"
+            />
+          ))}
+        </div>
+      )}
+
+      {/* ── Step 3: Constraints & notes ─────────────────────────── */}
+      {step === 3 && (
+        <div className="space-y-5">
+          <div className="space-y-2">
+            {CONSTRAINT_OPTIONS.map((c) => (
+              <OptionTile
+                key={c.value}
+                label={c.label}
+                icon={c.icon}
+                selected={constraints.includes(c.value)}
+                onClick={() => toggleConstraint(c.value)}
+                accentColor="var(--accent-coral)"
+              />
+            ))}
+          </div>
+
           <div>
-            <label className="block text-sm mb-1">Notes (optional)</label>
+            <label
+              className="block text-[12px] uppercase tracking-widest text-[var(--muted)] mb-2"
+              style={{ fontFamily: "var(--font-body)" }}
+            >
+              Anything else? (optional)
+            </label>
             <textarea
-              className="w-full border border-black/10 rounded-xl px-3 py-2"
+              className="w-full border border-[var(--line)] rounded-[4px] px-4 py-3 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white resize-none"
+              style={{ fontFamily: "var(--font-body)", color: "var(--ink)" }}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}
+              placeholder="Allergies, mobility needs, strong dislikes…"
             />
           </div>
-          <button
-            className="w-full rounded-full bg-[var(--ink)] text-white px-4 py-2"
-            disabled={saving}
-          >
-            {saving ? "Saving..." : "Submit preferences"}
-          </button>
-        </form>
-      </div>
-    </div>
+        </div>
+      )}
+    </WizardShell>
   )
 }

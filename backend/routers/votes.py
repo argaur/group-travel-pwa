@@ -8,9 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user
 from database import get_db
-from models.db import Vote, VoteResponse
+from models.db import Vote, VoteResponse, TripMember
 from routers.guards import require_preferences_submitted
 from routers.stream import publish
+from services.ai import suggest_vote_options
 
 router = APIRouter()
 
@@ -96,5 +97,28 @@ async def get_vote_tally(
 
 
 @router.post("/{trip_id}/vote-options/ai-generate")
-async def ai_generate_options(trip_id: str, body: AIGenerateOptions):
-    raise HTTPException(status_code=status.HTTP_501_NOT_IMPLEMENTED, detail="V2 feature")
+async def ai_generate_options(
+    trip_id: str,
+    body: AIGenerateOptions,
+    db: AsyncSession = Depends(get_db),
+    user=Depends(get_current_user),
+):
+    trip_uuid = uuid.UUID(trip_id)
+
+    # Only organizer can trigger AI generation
+    member_result = await db.execute(
+        select(TripMember).where(
+            TripMember.trip_id == trip_uuid,
+            TripMember.user_id == user.id,
+        )
+    )
+    member = member_result.scalar_one_or_none()
+    if not member or member.role != "organizer":
+        raise HTTPException(status_code=403, detail="Only the organizer can generate AI options")
+
+    try:
+        options = await suggest_vote_options(body.vote_type, body.context)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"AI generation failed: {str(e)}")
+
+    return {"vote_type": body.vote_type, "options": options}

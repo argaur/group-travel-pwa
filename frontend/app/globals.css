@@ -13,6 +13,10 @@
   --accent-pink: #ff6b9a;
   --accent-coral: #ff8a6b;
   --accent-lilac: #9a8cff;
+
+  /* Typography — set by next/font/google via layout.tsx */
+  /* --font-display: Fraunces (serif, italic for hero) */
+  /* --font-body: DM Sans (clean, geometric) */
 }
 
 body {
@@ -21,25 +25,43 @@ body {
     radial-gradient(circle at 80% 10%, rgba(154, 140, 255, 0.08), transparent 35%),
     radial-gradient(circle at 15% 85%, rgba(255, 138, 107, 0.07), transparent 30%),
     var(--bg);
-  font-family: var(--font-geist-sans), ui-sans-serif, system-ui;
+  font-family: var(--font-body), ui-sans-serif, system-ui;
 }
+
+/* ── Base card ───────────────────────────────────────────────────────────────── */
 
 .card {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(15, 18, 34, 0.05);
+  border-radius: 4px;
 }
 
 .card-interactive {
-  transition: transform 180ms ease, box-shadow 220ms ease, border-color 180ms ease;
+  transition: border-color 150ms ease, background 150ms ease, border-left-width 150ms ease;
+  cursor: pointer;
 }
 
 .card-interactive:hover {
-  transform: translateY(-2px);
-  border-color: rgba(15, 18, 34, 0.16);
-  box-shadow: 0 24px 44px rgba(15, 18, 34, 0.09);
+  border-left-width: 4px;
+  background: rgba(154, 140, 255, 0.03);
+  border-color: rgba(15, 18, 34, 0.14);
 }
+
+/* ── Accent left-border cards ────────────────────────────────────────────────── */
+
+.card-accent-pink {
+  border-left: 3px solid var(--accent-pink);
+}
+
+.card-accent-coral {
+  border-left: 3px solid var(--accent-coral);
+}
+
+.card-accent-lilac {
+  border-left: 3px solid var(--accent-lilac);
+}
+
+/* ── Chip ────────────────────────────────────────────────────────────────────── */
 
 .chip {
   background: rgba(15, 18, 34, 0.05);
@@ -47,17 +69,30 @@ body {
   padding: 6px 12px;
   font-size: 12px;
   color: var(--muted);
+  font-family: var(--font-body), ui-sans-serif, system-ui;
 }
+
+/* ── Animations ──────────────────────────────────────────────────────────────── */
 
 @keyframes fade-up {
   from {
     opacity: 0;
     transform: translateY(8px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
   }
 }
 
@@ -65,8 +100,27 @@ body {
   animation: fade-up 320ms ease-out both;
 }
 
+.animate-slide-in {
+  animation: slide-in 280ms ease-out both;
+}
+
+/* Staggered children */
+.stagger-child {
+  animation: fade-up 280ms ease-out both;
+}
+.stagger-child:nth-child(1) { animation-delay: 40ms; }
+.stagger-child:nth-child(2) { animation-delay: 80ms; }
+.stagger-child:nth-child(3) { animation-delay: 120ms; }
+.stagger-child:nth-child(4) { animation-delay: 160ms; }
+.stagger-child:nth-child(5) { animation-delay: 200ms; }
+.stagger-child:nth-child(6) { animation-delay: 240ms; }
+
+/* ── Reduced motion ──────────────────────────────────────────────────────────── */
+
 @media (prefers-reduced-motion: reduce) {
-  .animate-fade-up {
+  .animate-fade-up,
+  .animate-slide-in,
+  .stagger-child {
     animation: none;
   }
 
@@ -75,8 +129,18 @@ body {
   }
 }
 
+/* ── Utilities ───────────────────────────────────────────────────────────────── */
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;
+  }
+
+  .font-display {
+    font-family: var(--font-display), Georgia, serif;
+  }
+
+  .font-body {
+    font-family: var(--font-body), ui-sans-serif, system-ui;
   }
 }

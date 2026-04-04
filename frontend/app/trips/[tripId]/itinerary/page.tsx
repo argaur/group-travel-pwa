@@ -6,12 +6,18 @@ import { api } from "@/lib/api"
 import { ensureBackendToken, getBackendUserId } from "@/lib/backend-auth"
 import AppShell from "@/components/AppShell"
 import TripPlanningGate from "@/components/TripPlanningGate"
+import PlaceSearchInput, { type PlaceResult } from "@/components/places/PlaceSearchInput"
+import PlacePreviewMini from "@/components/places/PlacePreviewMini"
 
 type Item = {
   id: string
   day_number: number
   title: string
   location: string | null
+  place_id: string | null
+  place_name: string | null
+  place_photo_url: string | null
+  place_rating: number | null
 }
 
 type MemberRow = {
@@ -34,6 +40,8 @@ function ItineraryContent() {
   const [day, setDay] = useState("1")
   const [title, setTitle] = useState("")
   const [location, setLocation] = useState("")
+  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null)
+  const [itemPlacePicker, setItemPlacePicker] = useState<string | null>(null) // item id with open picker
   const [expanded, setExpanded] = useState<string | null>(null)
   const [commentsByItem, setCommentsByItem] = useState<Record<string, Comment[]>>({})
   const [commentDraft, setCommentDraft] = useState<Record<string, string>>({})
@@ -79,12 +87,32 @@ function ItineraryContent() {
   async function addItem(e: React.FormEvent) {
     e.preventDefault()
     if (!isOrganizer) return
-    await api.post(`/trips/${params.tripId}/itinerary/days/${day}/items`, {
+    const item = await api.post<Item>(`/trips/${params.tripId}/itinerary/days/${day}/items`, {
       title,
-      location: location || null,
+      location: selectedPlace?.name || location || null,
     })
+    if (selectedPlace) {
+      await api.put(`/trips/${params.tripId}/itinerary/items/${item.id}/place`, {
+        place_id: selectedPlace.place_id,
+        place_name: selectedPlace.name,
+        place_photo_url: selectedPlace.primary_photo_url ?? null,
+        place_rating: selectedPlace.rating ?? null,
+      }).catch(() => {/* non-blocking */})
+    }
     setTitle("")
     setLocation("")
+    setSelectedPlace(null)
+    load()
+  }
+
+  async function saveItemPlace(itemId: string, place: PlaceResult) {
+    await api.put(`/trips/${params.tripId}/itinerary/items/${itemId}/place`, {
+      place_id: place.place_id,
+      place_name: place.name,
+      place_photo_url: place.primary_photo_url ?? null,
+      place_rating: place.rating ?? null,
+    })
+    setItemPlacePicker(null)
     load()
   }
 
@@ -144,12 +172,29 @@ function ItineraryContent() {
               onChange={(e) => setTitle(e.target.value)}
               required
             />
-            <input
-              className="w-full border border-black/10 rounded-xl px-3 py-2"
-              placeholder="Location"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
+            {selectedPlace ? (
+              <div className="flex items-center justify-between gap-2 border border-black/10 rounded-xl px-3 py-2">
+                <PlacePreviewMini
+                  name={selectedPlace.name}
+                  photoUrl={selectedPlace.primary_photo_url}
+                  rating={selectedPlace.rating}
+                />
+                <button
+                  type="button"
+                  className="text-xs text-[var(--muted)] underline shrink-0"
+                  onClick={() => setSelectedPlace(null)}
+                >
+                  Clear
+                </button>
+              </div>
+            ) : (
+              <PlaceSearchInput
+                value={location}
+                onChange={setLocation}
+                onSelect={(place) => { setSelectedPlace(place); setLocation(place.name) }}
+                placeholder="Search location (Google Places)…"
+              />
+            )}
             <button className="w-full rounded-full bg-[var(--ink)] text-white px-4 py-2">
               Add item
             </button>
@@ -174,13 +219,52 @@ function ItineraryContent() {
                 <p className="font-medium">
                   Day {item.day_number}: {item.title}
                 </p>
-                {item.location && (
+                {item.place_name ? (
+                  <div className="mt-1.5">
+                    <PlacePreviewMini
+                      name={item.place_name}
+                      photoUrl={item.place_photo_url}
+                      rating={item.place_rating}
+                    />
+                  </div>
+                ) : item.location ? (
                   <p className="text-sm text-[var(--muted)]">{item.location}</p>
-                )}
+                ) : null}
                 <p className="text-xs text-[var(--muted)] mt-1">
                   {expanded === item.id ? "Hide comments" : "Comments"}
                 </p>
               </button>
+
+              {isOrganizer && (
+                <div className="pt-1">
+                  {itemPlacePicker === item.id ? (
+                    <div className="space-y-1.5">
+                      <PlaceSearchInput
+                        value=""
+                        onChange={() => {}}
+                        onSelect={(place) => saveItemPlace(item.id, place)}
+                        placeholder="Search Google Places…"
+                      />
+                      <button
+                        type="button"
+                        className="text-xs text-[var(--muted)] underline"
+                        onClick={() => setItemPlacePicker(null)}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="text-xs text-[var(--muted)] underline"
+                      onClick={() => setItemPlacePicker(item.id)}
+                    >
+                      {item.place_name ? "Change place" : "Add place"}
+                    </button>
+                  )}
+                </div>
+              )}
+
               {expanded === item.id && (
                 <div className="border-t border-black/5 pt-3 space-y-2">
                   {(commentsByItem[item.id] || []).map((c) => (
