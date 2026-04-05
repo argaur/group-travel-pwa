@@ -46,7 +46,7 @@ export default function SignInPage() {
         {/* Logo mark */}
         <div className="relative z-10">
           <p
-            className="text-white text-[22px]"
+            className="gradient-text text-[22px]"
             style={{
               fontFamily: "var(--font-display)",
               fontStyle: "italic",
@@ -103,7 +103,7 @@ export default function SignInPage() {
         {/* Mobile logo */}
         <div className="lg:hidden mb-10">
           <p
-            className="text-[26px] text-[var(--ink)]"
+            className="gradient-text text-[26px]"
             style={{
               fontFamily: "var(--font-display)",
               fontStyle: "italic",
