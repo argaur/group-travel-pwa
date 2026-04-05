@@ -27,7 +27,7 @@ export async function subscribeToPush(): Promise<PushSubscription | null> {
 
 /** Trigger native share sheet (falls back to clipboard copy). */
 export async function shareInviteLink(tripName: string, inviteUrl: string): Promise<void> {
-  const text = `Join my group trip "${tripName}" on GroupTrip — plan together, no group chat chaos: ${inviteUrl}`;
+  const text = `Join my group trip "${tripName}" on Trivo — plan together, no group chat chaos: ${inviteUrl}`;
 
   if (navigator.share) {
     await navigator.share({ title: `Join: ${tripName}`, text, url: inviteUrl });

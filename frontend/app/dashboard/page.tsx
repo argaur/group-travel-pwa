@@ -83,7 +83,7 @@ export default function DashboardLandingPage() {
           className="text-[20px] text-[var(--ink)]"
           style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontWeight: 300 }}
         >
-          GroupTrip
+          Trivo
         </p>
         <button
           type="button"

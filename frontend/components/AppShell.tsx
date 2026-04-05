@@ -1,7 +1,19 @@
 "use client"
 
 import Link from "next/link"
+import { useEffect, useState } from "react"
 import { signOut } from "next-auth/react"
+import { api } from "@/lib/api"
+
+type TripMeta = {
+  name: string
+  destination: string | null
+  start_date: string | null
+  end_date: string | null
+  place_name: string | null
+  trip_type: string
+  status: string
+}
 
 type AppShellProps = {
   tripId: string
@@ -11,6 +23,15 @@ type AppShellProps = {
   children: React.ReactNode
 }
 
+function formatDateRange(start: string | null, end: string | null) {
+  if (!start && !end) return null
+  const fmt = (d: string) =>
+    new Date(d).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" })
+  if (start && end) return `${fmt(start)} – ${fmt(end)}`
+  if (start) return `From ${fmt(start)}`
+  return `Until ${fmt(end!)}`
+}
+
 export default function AppShell({
   tripId,
   active,
@@ -18,6 +39,11 @@ export default function AppShell({
   subtitle,
   children,
 }: AppShellProps) {
+  const [tripMeta, setTripMeta] = useState<TripMeta | null>(null)
+
+  useEffect(() => {
+    api.get<TripMeta>(`/trips/${tripId}`).then(setTripMeta).catch(() => {})
+  }, [tripId])
   const nav = [
     { id: "dashboard", label: "Dashboard", href: `/dashboard/${tripId}` },
     { id: "preferences", label: "Preferences", href: `/trips/${tripId}/preferences/summary` },
@@ -39,7 +65,7 @@ export default function AppShell({
             className="hidden md:block text-white text-[17px] leading-tight"
             style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontWeight: 500 }}
           >
-            GroupTrip
+            Trivo
           </span>
           {/* Mobile: gradient square */}
           <div className="md:hidden w-8 h-8 rounded-[4px] bg-gradient-to-br from-[var(--accent-coral)] to-[var(--accent-pink)]" />
@@ -87,7 +113,61 @@ export default function AppShell({
       </aside>
 
       {/* Main content */}
-      <main className="relative flex-1 px-5 md:px-10 py-8 overflow-hidden min-w-0">
+      <main className="relative flex-1 overflow-hidden min-w-0 flex flex-col">
+        {/* Trip context bar */}
+        {tripMeta && (
+          <div className="shrink-0 border-b border-[var(--line)] bg-[var(--surface)] px-5 md:px-10 h-9 flex items-center gap-4 overflow-hidden">
+            {/* Location ticker */}
+            <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" className="shrink-0">
+                <path d="M6 0C3.79 0 2 1.79 2 4c0 3 4 8 4 8s4-5 4-8c0-2.21-1.79-4-4-4zm0 5.5A1.5 1.5 0 1 1 6 2.5a1.5 1.5 0 0 1 0 3z"
+                  fill="url(#loc-grad)" />
+                <defs>
+                  <linearGradient id="loc-grad" x1="0" y1="0" x2="12" y2="12" gradientUnits="userSpaceOnUse">
+                    <stop stopColor="var(--accent-coral)" />
+                    <stop offset="1" stopColor="var(--accent-pink)" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div className="overflow-hidden min-w-0">
+                <p
+                  className="text-[11px] font-medium whitespace-nowrap animate-ticker"
+                  style={{
+                    fontFamily: "var(--font-body)",
+                    background: "linear-gradient(90deg, var(--accent-coral), var(--accent-pink))",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                  }}
+                >
+                  {tripMeta.place_name ?? tripMeta.destination ?? tripMeta.name}
+                </p>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <span className="shrink-0 w-px h-3.5 bg-[var(--line)]" />
+
+            {/* Dates */}
+            {formatDateRange(tripMeta.start_date, tripMeta.end_date) && (
+              <p className="shrink-0 text-[11px] text-[var(--muted)]" style={{ fontFamily: "var(--font-body)" }}>
+                {formatDateRange(tripMeta.start_date, tripMeta.end_date)}
+              </p>
+            )}
+
+            {/* Divider */}
+            <span className="shrink-0 w-px h-3.5 bg-[var(--line)]" />
+
+            {/* Status badge */}
+            <span
+              className="shrink-0 text-[10px] uppercase tracking-wider text-[var(--muted)]"
+              style={{ fontFamily: "var(--font-body)" }}
+            >
+              {tripMeta.status}
+            </span>
+          </div>
+        )}
+
+        <div className="relative flex-1 px-5 md:px-10 py-8 overflow-hidden">
         {/* Background orbs */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-[-100px] right-[-70px] h-72 w-72 rounded-full bg-[var(--accent-lilac)]/10 blur-3xl" />
@@ -124,6 +204,7 @@ export default function AppShell({
           </div>
 
           {children}
+        </div>
         </div>
       </main>
     </div>

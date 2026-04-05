@@ -53,7 +53,7 @@ export default function SignInPage() {
               fontWeight: 300,
             }}
           >
-            GroupTrip
+            Trivo
           </p>
         </div>
 
@@ -110,7 +110,7 @@ export default function SignInPage() {
               fontWeight: 300,
             }}
           >
-            GroupTrip
+            Trivo
           </p>
         </div>
 
@@ -157,7 +157,7 @@ export default function SignInPage() {
             className="text-[11px] text-[var(--muted)] text-center leading-relaxed"
             style={{ fontFamily: "var(--font-body)" }}
           >
-            By continuing, you agree to GroupTrip's terms.
+            By continuing, you agree to Trivo's terms.
             <br />
             Your preferences are always kept anonymous from the group.
           </p>
