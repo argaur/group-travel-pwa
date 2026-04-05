@@ -23,9 +23,9 @@ export async function POST() {
     iat: Math.floor(Date.now() / 1000),
   }
 
-  const secret = process.env.NEXTAUTH_SECRET
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET
   if (!secret) {
-    return NextResponse.json({ error: "missing NEXTAUTH_SECRET" }, { status: 500 })
+    return NextResponse.json({ error: "missing AUTH_SECRET" }, { status: 500 })
   }
 
   const canonical = canonicalPayload(payload)
