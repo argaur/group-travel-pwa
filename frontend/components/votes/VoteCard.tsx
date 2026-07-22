@@ -51,7 +51,6 @@ export default function VoteCard({
       await api.post(`/trips/${tripId}/votes`, {
         vote_type: voteType,
         option_id: option,
-        value: "up",
       })
       onVoteCast()
     } catch {

@@ -37,12 +37,22 @@ const VOTE_TOPICS = [
   },
 ] as const
 
+type VoteData = {
+  options: string[]
+  tally: Record<string, number>
+  total: number
+  my_vote: string | null
+}
+
+const EMPTY_VOTE: VoteData = { options: [], tally: {}, total: 0, my_vote: null }
+
 function VotePageContent() {
   const params = useParams<{ tripId: string }>()
   const [members, setMembers] = useState<MemberRow[]>([])
   const [tallies, setTallies] = useState<Record<string, Record<string, number>>>({})
-  // Track known options per vote type by collecting all keys from tallies
+  // Options are the ballot the organizer published (persisted server-side), not tally keys
   const [optionSets, setOptionSets] = useState<Record<string, string[]>>({})
+  const [myVotes, setMyVotes] = useState<Record<string, string | null>>({})
   const [loading, setLoading] = useState(true)
 
   const myId = getBackendUserId()
@@ -53,26 +63,28 @@ function VotePageContent() {
 
   const load = useCallback(async () => {
     await ensureBackendToken()
-    const [mems, ...tallyResults] = await Promise.all([
+    const [mems, ...voteResults] = await Promise.all([
       api.get<MemberRow[]>(`/trips/${params.tripId}/members`),
       ...VOTE_TOPICS.map((t) =>
         api
-          .get<Record<string, number>>(`/trips/${params.tripId}/votes/${t.type}`)
-          .catch(() => ({} as Record<string, number>))
+          .get<VoteData>(`/trips/${params.tripId}/votes/${t.type}`)
+          .catch(() => EMPTY_VOTE)
       ),
     ])
     setMembers(mems)
 
     const newTallies: Record<string, Record<string, number>> = {}
     const newOptionSets: Record<string, string[]> = {}
+    const newMyVotes: Record<string, string | null> = {}
     VOTE_TOPICS.forEach((t, i) => {
-      const tally = (tallyResults[i] as Record<string, number>) ?? {}
-      newTallies[t.type] = tally
-      // Preserve existing option order, append any new keys
-      newOptionSets[t.type] = Object.keys(tally)
+      const data = (voteResults[i] as VoteData) ?? EMPTY_VOTE
+      newTallies[t.type] = data.tally
+      newOptionSets[t.type] = data.options
+      newMyVotes[t.type] = data.my_vote
     })
     setTallies(newTallies)
     setOptionSets(newOptionSets)
+    setMyVotes(newMyVotes)
     setLoading(false)
   }, [params.tripId])
 
@@ -142,6 +154,7 @@ function VotePageContent() {
                     label={topic.label}
                     options={options}
                     tally={tally}
+                    currentVote={myVotes[topic.type] ?? undefined}
                     onVoteCast={load}
                   />
                 )}

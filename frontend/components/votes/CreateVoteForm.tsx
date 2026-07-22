@@ -55,12 +55,8 @@ export default function CreateVoteForm({
     if (options.length < 2 || publishing) return
     setPublishing(true)
     try {
-      // Cast first vote on first option to create the Vote row — backend creates lazily on first cast
-      await api.post(`/trips/${tripId}/votes`, {
-        vote_type: voteType,
-        option_id: options[0],
-        value: "up",
-      })
+      // Persist the ballot options WITHOUT casting a vote (organizer stays unbiased).
+      await api.post(`/trips/${tripId}/votes/${voteType}/options`, { options })
       setPublished(true)
       onCreated()
     } catch {
