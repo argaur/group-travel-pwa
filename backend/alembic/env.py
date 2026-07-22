@@ -21,7 +21,12 @@ target_metadata = Base.metadata
 
 def get_url() -> str:
     from config import get_settings
-    return get_settings().database_url
+    from database import _normalize_asyncpg_url
+    # Reuse the runtime normalization (scheme -> postgresql+asyncpg, sslmode ->
+    # ssl, strip channel_binding) so alembic's async engine gets a valid async
+    # driver URL — the raw settings.database_url is postgresql:// and fails with
+    # "The asyncio extension requires an async driver".
+    return _normalize_asyncpg_url(get_settings().database_url)
 
 
 def run_migrations_offline() -> None:
@@ -43,15 +48,13 @@ def do_run_migrations(connection: Connection) -> None:
 
 async def run_async_migrations() -> None:
     cfg = config.get_section(config.config_ini_section, {})
-    raw_url = get_url()
-    # asyncpg doesn't accept sslmode/channel_binding as kwargs — strip them
-    clean_url = raw_url.split("?")[0]
-    cfg["sqlalchemy.url"] = clean_url
+    # get_url() already normalizes to postgresql+asyncpg and translates
+    # sslmode -> ssl, mirroring the runtime engine in database.py.
+    cfg["sqlalchemy.url"] = get_url()
     connectable = async_engine_from_config(
         cfg,
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
-        connect_args={"ssl": True},
     )
     async with connectable.connect() as connection:
         await connection.run_sync(do_run_migrations)
