@@ -17,7 +17,12 @@ class Settings(BaseSettings):
     razorpay_key_id: str = ""
     razorpay_key_secret: str = ""
 
-    allowed_origins: str = "http://localhost:3000"
+    allowed_origins: str = (
+        "http://localhost:3000,"
+        "https://frontend-rmrv09xjy-argaurs-projects.vercel.app,"
+        "https://frontend-lovat-phi-52.vercel.app,"
+        "https://frontend-argaurs-projects.vercel.app"
+    )
 
     # Google Places API (optional — demo sample data when empty)
     google_maps_api_key: str = ""
