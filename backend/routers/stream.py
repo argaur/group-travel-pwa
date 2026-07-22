@@ -1,6 +1,5 @@
 import asyncio
 import json
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import StreamingResponse
@@ -8,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from auth import get_current_user_sse
 from database import get_db
-from routers.guards import get_trip_membership
+from routers.guards import get_trip_membership, parse_uuid
 
 router = APIRouter()
 
@@ -28,10 +27,18 @@ async def publish(trip_id: str, event_type: str, data: dict):
 async def _event_generator(trip_id: str, queue: asyncio.Queue):
     try:
         while True:
-            message = await asyncio.wait_for(queue.get(), timeout=30)
-            yield message
-    except asyncio.TimeoutError:
-        yield ": keepalive\n\n"  # prevent proxy timeouts
+            try:
+                message = await asyncio.wait_for(queue.get(), timeout=30)
+                yield message
+            except asyncio.TimeoutError:
+                yield ": keepalive\n\n"  # prevent proxy timeouts, keep the stream open
+    finally:
+        # Unregister this subscriber when the client disconnects (generator closes)
+        subs = _subscribers.get(trip_id)
+        if subs and queue in subs:
+            subs.remove(queue)
+            if not subs:
+                _subscribers.pop(trip_id, None)
 
 
 @router.get("/{trip_id}/stream")
@@ -45,15 +52,12 @@ async def trip_stream(
     Events: task_completed | member_joined | vote_cast | expense_added | preference_submitted | leader_transferred
     Auth: Authorization Bearer or ?token= (required for browser EventSource).
     """
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     if await get_trip_membership(db, trip_uuid, user.id) is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
 
     queue: asyncio.Queue = asyncio.Queue()
     _subscribers.setdefault(trip_id, []).append(queue)
-
-    async def cleanup():
-        _subscribers[trip_id].remove(queue)
 
     return StreamingResponse(
         _event_generator(trip_id, queue),
