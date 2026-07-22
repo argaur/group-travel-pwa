@@ -8,6 +8,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from models.db import TripMember
 
 
+def parse_uuid(value: str, field: str = "id") -> uuid.UUID:
+    """Parse a path/query UUID, returning 400 (not 500) on malformed input."""
+    try:
+        return uuid.UUID(value)
+    except (ValueError, AttributeError, TypeError):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid {field}",
+        )
+
+
 async def get_trip_membership(
     db: AsyncSession,
     trip_id: uuid.UUID,

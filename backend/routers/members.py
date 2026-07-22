@@ -2,7 +2,6 @@ import base64
 import hmac
 import json
 import time
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -13,7 +12,7 @@ from auth import get_current_user
 from config import get_settings
 from database import get_db
 from models.db import Trip, TripMember, User
-from routers.guards import require_organizer
+from routers.guards import parse_uuid, require_organizer
 from routers.stream import publish
 
 router = APIRouter()
@@ -34,7 +33,7 @@ async def generate_invite(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     result = await db.execute(select(Trip).where(Trip.id == trip_uuid))
     trip = result.scalar_one_or_none()
     if trip is None:
@@ -89,7 +88,7 @@ async def join_trip(
     except Exception:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid invite token")
 
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     result = await db.execute(select(Trip).where(Trip.id == trip_uuid))
     if result.scalar_one_or_none() is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Trip not found")
@@ -116,10 +115,10 @@ async def transfer_organizer(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     current = await require_organizer(db, trip_uuid, user.id)
 
-    target_id = uuid.UUID(body.to_user_id)
+    target_id = parse_uuid(body.to_user_id, "to_user_id")
     if target_id == user.id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Already organizer")
 
@@ -157,7 +156,7 @@ async def list_members(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     membership = await db.execute(
         select(TripMember).where(
             TripMember.trip_id == trip_uuid,

@@ -1,5 +1,4 @@
 import json
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
@@ -13,7 +12,7 @@ from auth import get_current_user
 from config import get_settings
 from database import get_db
 from models.db import PushSubscription, Task, TripMember
-from routers.guards import require_preferences_submitted, require_user_is_trip_member_user
+from routers.guards import parse_uuid, require_preferences_submitted, require_user_is_trip_member_user
 from routers.stream import publish
 
 router = APIRouter()
@@ -42,17 +41,17 @@ async def create_task(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
 
     if body.assigned_to:
-        await require_user_is_trip_member_user(db, trip_uuid, uuid.UUID(body.assigned_to))
+        await require_user_is_trip_member_user(db, trip_uuid, parse_uuid(body.assigned_to, "assigned_to"))
 
     task = Task(
         trip_id=trip_uuid,
         title=body.title,
         category=body.category,
-        assigned_to=uuid.UUID(body.assigned_to) if body.assigned_to else None,
+        assigned_to=parse_uuid(body.assigned_to, "assigned_to") if body.assigned_to else None,
         due_date=body.due_date,
     )
     db.add(task)
@@ -68,14 +67,14 @@ async def list_tasks(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
 
     query = select(Task).where(Task.trip_id == trip_uuid)
     if status:
         query = query.where(Task.status == status)
     if assigned_to:
-        query = query.where(Task.assigned_to == uuid.UUID(assigned_to))
+        query = query.where(Task.assigned_to == parse_uuid(assigned_to, "assigned_to"))
     result = await db.execute(query)
     tasks = result.scalars().all()
     return [
@@ -99,24 +98,24 @@ async def update_task(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
 
-    task_uuid = uuid.UUID(task_id)
+    task_uuid = parse_uuid(task_id, "task_id")
     result = await db.execute(select(Task).where(Task.id == task_uuid, Task.trip_id == trip_uuid))
     task = result.scalar_one_or_none()
     if task is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
 
     if body.assigned_to is not None:
-        await require_user_is_trip_member_user(db, trip_uuid, uuid.UUID(body.assigned_to))
+        await require_user_is_trip_member_user(db, trip_uuid, parse_uuid(body.assigned_to, "assigned_to"))
 
     if body.title is not None:
         task.title = body.title
     if body.category is not None:
         task.category = body.category
     if body.assigned_to is not None:
-        task.assigned_to = uuid.UUID(body.assigned_to)
+        task.assigned_to = parse_uuid(body.assigned_to, "assigned_to")
     if body.status is not None:
         task.status = body.status
         if body.status == "done":
@@ -134,10 +133,10 @@ async def nudge_assignee(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
 
-    task_uuid = uuid.UUID(task_id)
+    task_uuid = parse_uuid(task_id, "task_id")
     result = await db.execute(select(Task).where(Task.id == task_uuid, Task.trip_id == trip_uuid))
     task = result.scalar_one_or_none()
     if task is None or task.assigned_to is None:

@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import get_current_user
 from database import get_db
 from models.db import Expense, ExpenseSplit, TripMember, User
-from routers.guards import require_preferences_submitted
+from routers.guards import parse_uuid, require_preferences_submitted
 from routers.stream import publish
 
 router = APIRouter()
@@ -31,10 +31,10 @@ async def log_expense(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
 
-    paid_by = uuid.UUID(body.paid_by)
+    paid_by = parse_uuid(body.paid_by, "paid_by")
     paid_member = await db.execute(
         select(TripMember).where(
             TripMember.trip_id == trip_uuid,
@@ -60,7 +60,7 @@ async def log_expense(
             splits.append(
                 ExpenseSplit(
                     expense_id=expense.id,
-                    user_id=uuid.UUID(user_id),
+                    user_id=parse_uuid(user_id, "user_id"),
                     amount_owed=amount,
                 )
             )
@@ -96,7 +96,7 @@ async def list_expenses(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
 
     query = select(Expense).where(Expense.trip_id == trip_uuid)
@@ -124,7 +124,7 @@ async def expense_summary(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
 
     paid_result = await db.execute(select(Expense).where(Expense.trip_id == trip_uuid))
@@ -159,7 +159,7 @@ async def settlement(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
 
     summary = await expense_summary(trip_id, db=db, user=user)

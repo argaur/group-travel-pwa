@@ -1,6 +1,4 @@
-import uuid
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import get_current_user
 from database import get_db
 from models.db import PushSubscription, TripMember
+from routers.guards import parse_uuid
 
 router = APIRouter()
 
@@ -29,7 +28,7 @@ async def subscribe_push(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(body.trip_id)
+    trip_uuid = parse_uuid(body.trip_id, "trip_id")
     membership = await db.execute(
         select(TripMember).where(
             TripMember.trip_id == trip_uuid,
@@ -73,7 +72,7 @@ async def unsubscribe_push(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     membership = await db.execute(
         select(TripMember).where(
             TripMember.trip_id == trip_uuid,

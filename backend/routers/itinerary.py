@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Any, Optional
@@ -10,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import get_current_user
 from database import get_db
 from models.db import ItineraryComment, ItineraryItem, User
-from routers.guards import require_organizer, require_preferences_submitted, require_user_is_trip_member_user
+from routers.guards import parse_uuid, require_organizer, require_preferences_submitted, require_user_is_trip_member_user
 from services.ai import suggest_itinerary
 
 router = APIRouter()
@@ -75,7 +73,7 @@ async def get_itinerary(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
 
     result = await db.execute(select(ItineraryItem).where(ItineraryItem.trip_id == trip_uuid))
@@ -105,12 +103,12 @@ async def add_itinerary_item(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
     await require_organizer(db, trip_uuid, user.id)
 
     if body.assigned_to:
-        await require_user_is_trip_member_user(db, trip_uuid, uuid.UUID(body.assigned_to))
+        await require_user_is_trip_member_user(db, trip_uuid, parse_uuid(body.assigned_to, "assigned_to"))
 
     item = ItineraryItem(
         trip_id=trip_uuid,
@@ -121,7 +119,7 @@ async def add_itinerary_item(
         end_time=body.end_time,
         cost_estimate=body.cost_estimate,
         notes=body.notes,
-        assigned_to=uuid.UUID(body.assigned_to) if body.assigned_to else None,
+        assigned_to=parse_uuid(body.assigned_to, "assigned_to") if body.assigned_to else None,
         sub_group=body.sub_group,
     )
     db.add(item)
@@ -138,14 +136,14 @@ async def update_itinerary_item(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
     await require_organizer(db, trip_uuid, user.id)
 
     if body.assigned_to:
-        await require_user_is_trip_member_user(db, trip_uuid, uuid.UUID(body.assigned_to))
+        await require_user_is_trip_member_user(db, trip_uuid, parse_uuid(body.assigned_to, "assigned_to"))
 
-    item_uuid = uuid.UUID(item_id)
+    item_uuid = parse_uuid(item_id, "item_id")
     result = await db.execute(
         select(ItineraryItem).where(
             ItineraryItem.id == item_uuid,
@@ -163,7 +161,7 @@ async def update_itinerary_item(
     item.end_time = body.end_time
     item.cost_estimate = body.cost_estimate
     item.notes = body.notes
-    item.assigned_to = uuid.UUID(body.assigned_to) if body.assigned_to else None
+    item.assigned_to = parse_uuid(body.assigned_to, "assigned_to") if body.assigned_to else None
     item.sub_group = body.sub_group
 
     return {"status": "updated"}
@@ -176,7 +174,7 @@ async def ai_suggest_itinerary(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_organizer(db, trip_uuid, user.id)
     await require_preferences_submitted(db, trip_uuid, user.id)
 
@@ -202,10 +200,10 @@ async def list_itinerary_comments(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
 
-    item_uuid = uuid.UUID(item_id)
+    item_uuid = parse_uuid(item_id, "item_id")
     item_row = await db.execute(
         select(ItineraryItem).where(ItineraryItem.id == item_uuid, ItineraryItem.trip_id == trip_uuid)
     )
@@ -238,10 +236,10 @@ async def add_itinerary_comment(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_preferences_submitted(db, trip_uuid, user.id)
 
-    item_uuid = uuid.UUID(item_id)
+    item_uuid = parse_uuid(item_id, "item_id")
     item_row = await db.execute(
         select(ItineraryItem).where(ItineraryItem.id == item_uuid, ItineraryItem.trip_id == trip_uuid)
     )
@@ -277,10 +275,10 @@ async def set_item_place(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_organizer(db, trip_uuid, user.id)
 
-    item_uuid = uuid.UUID(item_id)
+    item_uuid = parse_uuid(item_id, "item_id")
     result = await db.execute(
         select(ItineraryItem).where(
             ItineraryItem.id == item_uuid,

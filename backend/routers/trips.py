@@ -1,5 +1,3 @@
-import uuid
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import Optional
@@ -10,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import get_current_user
 from database import get_db
 from models.db import ItineraryItem, Preference, Task, Trip, TripMember
-from routers.guards import require_trip_member
+from routers.guards import parse_uuid, require_trip_member
 from services.preference_summary import aggregate_preferences
 
 router = APIRouter()
@@ -114,7 +112,7 @@ async def get_trip(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     result = await db.execute(select(Trip).where(Trip.id == trip_uuid))
     trip = result.scalar_one_or_none()
     if trip is None:
@@ -152,7 +150,7 @@ async def update_trip(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     result = await db.execute(select(Trip).where(Trip.id == trip_uuid))
     trip = result.scalar_one_or_none()
     if trip is None:
@@ -197,7 +195,7 @@ async def archive_trip(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     result = await db.execute(select(Trip).where(Trip.id == trip_uuid))
     trip = result.scalar_one_or_none()
     if trip is None:
@@ -223,7 +221,7 @@ async def trip_dashboard_summary(
     user=Depends(get_current_user),
 ):
     """Aggregates trip hub data for a single-screen dashboard (member may view before prefs done)."""
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     await require_trip_member(db, trip_uuid, user.id)
 
     trip_row = await db.execute(select(Trip).where(Trip.id == trip_uuid))
@@ -293,7 +291,7 @@ async def set_trip_place(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     result = await db.execute(select(Trip).where(Trip.id == trip_uuid))
     trip = result.scalar_one_or_none()
     if trip is None:

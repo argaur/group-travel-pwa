@@ -1,4 +1,3 @@
-import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -9,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth import get_current_user
 from database import get_db
 from models.db import DateBlock, TripMember, User
+from routers.guards import parse_uuid
 from routers.stream import publish
 
 router = APIRouter()
@@ -40,7 +40,7 @@ async def update_rsvp(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     result = await db.execute(
         select(TripMember).where(
             TripMember.trip_id == trip_uuid,
@@ -72,7 +72,7 @@ async def list_rsvp(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     # Verify current user is a member
     check = await db.execute(
         select(TripMember).where(
@@ -112,7 +112,7 @@ async def save_availability(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     check = await db.execute(
         select(TripMember).where(
             TripMember.trip_id == trip_uuid,
@@ -151,7 +151,7 @@ async def get_availability(
     db: AsyncSession = Depends(get_db),
     user=Depends(get_current_user),
 ):
-    trip_uuid = uuid.UUID(trip_id)
+    trip_uuid = parse_uuid(trip_id, "trip_id")
     check = await db.execute(
         select(TripMember).where(
             TripMember.trip_id == trip_uuid,
