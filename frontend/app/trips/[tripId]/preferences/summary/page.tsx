@@ -37,6 +37,45 @@ type Summary = {
   ai_summary: string | null
 }
 
+type SilentConflict = {
+  topic: string
+  severity: string
+  description: string
+  who_should_talk: string
+  grounded_in: string[]
+}
+
+type TripDirection = {
+  title: string
+  tradeoffs: string
+  serves_subgroup: string
+  confidence: string
+}
+
+type ConsensusReport = {
+  headline: string
+  agreement: string[]
+  silent_conflicts: SilentConflict[]
+  directions: TripDirection[]
+}
+
+type ConsensusResponse = {
+  responded: number
+  total_members: number
+  status: "ok" | "insufficient_responses"
+  source?: string
+  cached?: boolean
+  min_required?: number
+  message?: string
+  report?: ConsensusReport
+}
+
+const SEVERITY_STYLES: Record<string, string> = {
+  high: "border-l-[var(--accent-coral)] bg-[var(--accent-coral)]/[0.06]",
+  medium: "border-l-[var(--accent-pink)] bg-[var(--accent-pink)]/[0.06]",
+  low: "border-l-[var(--accent-lilac)] bg-[var(--accent-lilac)]/[0.06]",
+}
+
 function BarRow({ label, count, max }: { label: string; count: number; max: number }) {
   const pct = max > 0 ? Math.round((count / max) * 100) : 0
   return (
@@ -74,25 +113,26 @@ export default function PreferenceSummaryPage() {
   const params = useParams<{ tripId: string }>()
   const router = useRouter()
   const [summary, setSummary] = useState<Summary | null>(null)
-  const [aiSummary, setAiSummary] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [consensus, setConsensus] = useState<ConsensusResponse | null>(null)
+  const [consensusLoading, setConsensusLoading] = useState(false)
+  const [consensusError, setConsensusError] = useState<string | null>(null)
 
   useEffect(() => {
     api.get<Summary>(`/trips/${params.tripId}/preferences/summary`).then(setSummary)
   }, [params.tripId])
 
-  async function loadAi() {
-    setLoading(true)
+  async function loadConsensus() {
+    setConsensusLoading(true)
+    setConsensusError(null)
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const data = await api.get<any>(
-        `/trips/${params.tripId}/preferences/ai-synthesis`
+      const data = await api.get<ConsensusResponse>(
+        `/trips/${params.tripId}/preferences/consensus`
       )
-      setAiSummary(data.summary ?? data.raw ?? null)
-    } catch {
-      setAiSummary("Not enough responses yet to generate AI summary.")
+      setConsensus(data)
+    } catch (e) {
+      setConsensusError(e instanceof Error ? e.message : "Failed to surface consensus")
     } finally {
-      setLoading(false)
+      setConsensusLoading(false)
     }
   }
 
@@ -162,23 +202,145 @@ export default function PreferenceSummaryPage() {
           )}
         </div>
 
-        <div className="card p-5 space-y-3">
-          <h2 className="text-lg font-semibold">AI synthesis</h2>
-          <p className="text-sm text-[var(--muted)]">
-            Generate a group summary once enough responses are in.
-          </p>
-          <button
-            className="rounded-full bg-[var(--ink)] text-white px-4 py-2 text-sm"
-            onClick={loadAi}
-            disabled={loading}
-          >
-            {loading ? "Generating..." : "Generate"}
-          </button>
-          {aiSummary && (
-            <div className="border border-black/5 rounded-2xl p-4 text-sm">
-              {aiSummary}
+        <div className="card p-5 space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">Silent Conflict Surfacer</h2>
+            <p className="text-sm text-[var(--muted)]">
+              AI reads the anonymous aggregate and names the tensions nobody has
+              said out loud yet — grounded in the deterministic gap flags, never
+              an individual.
+            </p>
+          </div>
+
+          {!consensus && (
+            <button
+              className="rounded-full bg-[var(--ink)] text-white px-4 py-2 text-sm disabled:opacity-50"
+              onClick={loadConsensus}
+              disabled={consensusLoading}
+            >
+              {consensusLoading ? "Surfacing…" : "Surface group consensus"}
+            </button>
+          )}
+
+          {consensusError && (
+            <div className="space-y-2" role="alert">
+              <p className="text-sm text-red-600">{consensusError}</p>
+              <button
+                type="button"
+                onClick={loadConsensus}
+                className="text-sm underline text-[var(--muted)]"
+              >
+                Retry
+              </button>
             </div>
           )}
+
+          {consensus?.status === "insufficient_responses" && (
+            <div className="border border-dashed border-black/15 rounded-2xl p-4 text-sm text-[var(--muted)]">
+              {consensus.message}
+            </div>
+          )}
+
+          {consensus?.status === "ok" && consensus.report && (
+            <div className="space-y-5">
+              <div className="flex flex-wrap items-center gap-2">
+                {consensus.source === "ai" && (
+                  <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-[var(--accent-lilac)]/20 text-[var(--ink)]">
+                    AI-generated
+                  </span>
+                )}
+                {consensus.source === "deterministic_fallback" && (
+                  <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-black/10 text-[var(--muted)]">
+                    Deterministic fallback
+                  </span>
+                )}
+                {consensus.cached && (
+                  <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-black/5 text-[var(--muted)]">
+                    Cached
+                  </span>
+                )}
+              </div>
+
+              {consensus.message && (
+                <p className="text-xs text-[var(--muted)]">{consensus.message}</p>
+              )}
+
+              <p className="text-sm font-medium">{consensus.report.headline}</p>
+
+              {consensus.report.agreement.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    The group agrees on
+                  </p>
+                  <ul className="space-y-1 text-sm list-disc list-inside">
+                    {consensus.report.agreement.map((a, i) => (
+                      <li key={i}>{a}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                  Silent conflicts
+                </p>
+                {consensus.report.silent_conflicts.length === 0 && (
+                  <p className="text-sm text-[var(--muted)]">
+                    No unvoiced conflicts the numbers support — the group is aligned.
+                  </p>
+                )}
+                {consensus.report.silent_conflicts.map((c, i) => (
+                  <div
+                    key={i}
+                    className={`border-l-2 rounded-r-xl p-3 space-y-1 ${
+                      SEVERITY_STYLES[c.severity] ?? SEVERITY_STYLES.low
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold">{c.topic}</span>
+                      <span className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
+                        {c.severity}
+                      </span>
+                    </div>
+                    <p className="text-sm">{c.description}</p>
+                    <p className="text-xs text-[var(--muted)]">
+                      Who should talk: {c.who_should_talk}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {consensus.report.directions.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
+                    Directions worth putting to a vote
+                  </p>
+                  {consensus.report.directions.map((d, i) => (
+                    <div key={i} className="border border-black/5 rounded-2xl p-3 space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold">{d.title}</span>
+                        <span className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
+                          {d.confidence} confidence
+                        </span>
+                      </div>
+                      <p className="text-sm">{d.tradeoffs}</p>
+                      <p className="text-xs text-[var(--muted)]">Best for: {d.serves_subgroup}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={loadConsensus}
+                disabled={consensusLoading}
+                className="text-sm underline text-[var(--muted)] disabled:opacity-50"
+              >
+                {consensusLoading ? "Refreshing…" : "Refresh"}
+              </button>
+            </div>
+          )}
+
           <button
             className="rounded-full border border-black/10 px-4 py-2 text-sm"
             onClick={() => router.push(`/dashboard/${params.tripId}`)}

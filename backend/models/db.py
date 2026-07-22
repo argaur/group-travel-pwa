@@ -292,3 +292,31 @@ class PushSubscription(Base):
 
     trip: Mapped["Trip"] = relationship("Trip", back_populates="push_subscriptions")
     user: Mapped["User"] = relationship("User", back_populates="push_subscriptions")
+
+
+# ── Group Consensus (Silent Conflict Surfacer) ────────────────────────────────
+
+class GroupConsensusReport(Base):
+    """
+    Persisted output of the Silent Conflict Surfacer AI, keyed one-per-trip.
+
+    Generated from the deterministic ``aggregate_preferences`` output (never raw
+    per-user prefs), so it is anonymous by construction. ``aggregate_hash`` is a
+    SHA-256 of the aggregate input; a mismatch means a new preference landed and
+    the report is stale and must be regenerated.
+    """
+    __tablename__ = "group_consensus_reports"
+    __table_args__ = (UniqueConstraint("trip_id", name="uq_consensus_trip"),)
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    trip_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("trips.id", ondelete="CASCADE"), nullable=False
+    )
+    aggregate_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    responded_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    report: Mapped[dict] = mapped_column(JSONB, nullable=False)
+    source: Mapped[str] = mapped_column(String(50), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )

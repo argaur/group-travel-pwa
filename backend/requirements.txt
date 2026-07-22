@@ -11,8 +11,8 @@ sqlalchemy[asyncio]==2.0.36
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
 
-# AI
-anthropic==0.40.0
+# AI — needs >=0.70 for client.messages.parse() structured outputs (output_format)
+anthropic==0.116.0
 
 # Push notifications
 pywebpush==2.0.0

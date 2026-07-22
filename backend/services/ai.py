@@ -6,12 +6,21 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import asyncio
+import hashlib
 import json
 import os
 import anthropic
+from pydantic import BaseModel
 
 client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 MODEL = "claude-sonnet-4-6"
+
+# The Silent Conflict Surfacer is the flagship reasoning feature — use the
+# strongest model. Per the claude-api skill, the current default id is
+# claude-opus-4-8. Structured outputs (client.messages.parse + output_format)
+# guarantee the response validates against ConsensusReport, so parsing can
+# never silently fall through to {"raw": ...}.
+CONSENSUS_MODEL = "claude-opus-4-8"
 
 
 async def synthesize_preferences(preferences: list[dict]) -> dict:
@@ -142,6 +151,104 @@ Only return the JSON array, no other text."""
         return json.loads(raw)
     except Exception:
         return [{"id": "option_1", "label": "Option A", "description": raw[:80]}]
+
+
+# ── Silent Conflict Surfacer (flagship AI) ────────────────────────────────────
+
+class SilentConflict(BaseModel):
+    topic: str            # e.g. "Budget", "Pace"
+    severity: str         # "high" | "medium" | "low"
+    description: str      # anonymized narrative of the unvoiced tension
+    who_should_talk: str  # anonymized framing (sub-groups, never individuals)
+    grounded_in: list[str]  # deterministic gap_flags that support this conflict
+
+
+class TripDirection(BaseModel):
+    title: str
+    tradeoffs: str        # explicit tradeoffs of this direction
+    serves_subgroup: str  # which sub-group it serves best
+    confidence: str       # "high" | "medium" | "low"
+
+
+class ConsensusReport(BaseModel):
+    headline: str
+    agreement: list[str]                    # what the group clearly aligns on
+    silent_conflicts: list[SilentConflict]  # tensions nobody voiced
+    directions: list[TripDirection]         # 2-3 trip directions with tradeoffs
+
+
+def aggregate_input_hash(aggregate: dict) -> str:
+    """Stable SHA-256 of the deterministic aggregate — the persistence key."""
+    canonical = json.dumps(aggregate, sort_keys=True, default=str)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+async def surface_group_consensus(aggregate: dict, trip_meta: dict) -> ConsensusReport:
+    """
+    Reason over the *computed* preference aggregate (never raw per-user prefs)
+    and surface silent conflicts the group hasn't voiced.
+
+    Design invariants (interview talking points):
+      - Deterministic math stays deterministic. The LLM does NOT compute budget
+        overlap or distributions — those arrive pre-computed in ``aggregate``.
+        The LLM only reasons and narrates.
+      - Anonymity: the aggregate contains no user identity; the model is told to
+        reason only over sub-groups, never individuals.
+      - Grounded conflicts only: a silent conflict is valid only if it cites one
+        of the deterministic ``gap_flags``. We enforce this in code after the
+        call (belt-and-suspenders on top of the prompt rule).
+
+    Raises on API/parse failure so the caller can fall back to a *labeled*
+    deterministic summary — never a silent canned response.
+    """
+    gap_flags = [str(f) for f in (aggregate.get("gap_flags") or [])]
+    allowed_flags = set(gap_flags)
+
+    system = (
+        "You are Trivo's Silent Conflict Surfacer — the AI that reads a group's "
+        "anonymous travel preferences and names the tensions nobody has said out "
+        "loud yet (especially quiet budget misalignment), so the organizer can "
+        "raise them before they derail the trip.\n\n"
+        "HARD RULES:\n"
+        "1. The numbers are already computed for you. NEVER do arithmetic and "
+        "never restate raw figures as if you derived them — reason and narrate "
+        "over the provided aggregate.\n"
+        "2. Anonymity is absolute. You only ever see aggregates, never people. "
+        "Refer to sub-groups ('the budget-conscious travellers', 'those wanting "
+        "a faster pace') — never an individual, never 'one person said'.\n"
+        "3. Only report a silent conflict that is supported by the deterministic "
+        f"gap flags for THIS group: {gap_flags or 'none'}. Each silent_conflict's "
+        "'grounded_in' must contain at least one of those flag ids. If the list "
+        "is empty, 'silent_conflicts' MUST be an empty array — do NOT invent "
+        "tension where the math shows none.\n"
+        "4. 'directions' are 2-3 concrete trip directions, each with explicit "
+        "tradeoffs, the sub-group it serves best, and a confidence signal.\n"
+        "5. Be warm, specific, and honest. If the group broadly agrees, say so "
+        "plainly in 'agreement' and keep conflicts empty."
+    )
+    user_payload = json.dumps({"aggregate": aggregate, "trip": trip_meta}, indent=2, default=str)
+
+    message = await asyncio.to_thread(
+        client.messages.parse,
+        model=CONSENSUS_MODEL,
+        max_tokens=4000,
+        system=system,
+        messages=[{"role": "user", "content": user_payload}],
+        output_format=ConsensusReport,
+    )
+    report = message.parsed_output
+    if report is None:
+        raise ValueError("Consensus model returned no parseable output")
+
+    # Deterministic guardrail: drop any conflict not grounded in a real gap flag.
+    if allowed_flags:
+        report.silent_conflicts = [
+            c for c in report.silent_conflicts if set(c.grounded_in) & allowed_flags
+        ]
+    else:
+        report.silent_conflicts = []
+
+    return report
 
 
 # V3 stubs
