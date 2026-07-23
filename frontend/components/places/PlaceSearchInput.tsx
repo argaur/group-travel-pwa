@@ -165,7 +165,7 @@ export default function PlaceSearchInput({
       {open && !loading && results.length === 0 && query.length >= 2 && (
         <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[var(--line)] rounded-[4px] shadow-lg z-50 px-4 py-3">
           <p className="text-[12px] text-[var(--muted)]" style={{ fontFamily: "var(--font-body)" }}>
-            No places found for "{query}"
+            No places found for &ldquo;{query}&rdquo;
           </p>
         </div>
       )}

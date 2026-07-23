@@ -166,7 +166,7 @@ function VotePageContent() {
                     style={{ borderLeft: "3px solid var(--accent-lilac)" }}
                   >
                     <p className="text-sm text-[var(--muted)]">
-                      The organizer hasn't added options yet.
+                      The organizer hasn&apos;t added options yet.
                     </p>
                   </div>
                 )}

@@ -71,7 +71,7 @@ export default function SignInPage() {
               fontWeight: 300,
             }}
           >
-            "{quote.text}"
+            &ldquo;{quote.text}&rdquo;
           </blockquote>
           <p
             className="text-[12px] uppercase tracking-widest text-white/40"
@@ -157,7 +157,7 @@ export default function SignInPage() {
             className="text-[11px] text-[var(--muted)] text-center leading-relaxed"
             style={{ fontFamily: "var(--font-body)" }}
           >
-            By continuing, you agree to Trivo's terms.
+            By continuing, you agree to Trivo&apos;s terms.
             <br />
             Your preferences are always kept anonymous from the group.
           </p>

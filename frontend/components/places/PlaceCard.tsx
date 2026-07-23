@@ -172,7 +172,7 @@ export default function PlaceCard({ placeId, onDismiss }: PlaceCardProps) {
                     className="text-[12px] text-[var(--muted)] line-clamp-3"
                     style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontWeight: 300, lineHeight: 1.5 }}
                   >
-                    "{r.text}"
+                    &ldquo;{r.text}&rdquo;
                   </p>
                 )}
               </div>

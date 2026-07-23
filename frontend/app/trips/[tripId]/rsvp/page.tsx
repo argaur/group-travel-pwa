@@ -123,7 +123,7 @@ export default function RSVPPage() {
               className="text-[22px]"
               style={{ fontFamily: "var(--font-display)", fontWeight: 300 }}
             >
-              Who's coming?
+              Who&apos;s coming?
             </h2>
             <MemberRSVPGrid
               members={members}

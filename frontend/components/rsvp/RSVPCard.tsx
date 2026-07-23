@@ -70,7 +70,7 @@ export default function RSVPCard({
             className="text-[13px] text-[var(--muted)]"
             style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontWeight: 300 }}
           >
-            You're invited to
+            You&apos;re invited to
           </p>
           <h2
             className="text-[26px] leading-tight text-[var(--ink)]"
