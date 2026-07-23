@@ -11,6 +11,7 @@ from database import get_db
 from models.db import Expense, ExpenseSplit, TripMember, User
 from routers.guards import parse_uuid, require_preferences_submitted
 from routers.stream import publish
+from services.settlement import compute_settlements
 
 router = APIRouter()
 
@@ -167,25 +168,7 @@ async def settlement(
     if not balances:
         return []
 
-    creditors = [(uid, amt) for uid, amt in balances.items() if amt > 0]
-    debtors = [(uid, -amt) for uid, amt in balances.items() if amt < 0]
-
-    settlements = []
-    ci = 0
-    di = 0
-    while ci < len(creditors) and di < len(debtors):
-        c_uid, c_amt = creditors[ci]
-        d_uid, d_amt = debtors[di]
-        pay = min(c_amt, d_amt)
-        settlements.append({"from": d_uid, "to": c_uid, "amount": pay})
-        c_amt -= pay
-        d_amt -= pay
-        creditors[ci] = (c_uid, c_amt)
-        debtors[di] = (d_uid, d_amt)
-        if c_amt == 0:
-            ci += 1
-        if d_amt == 0:
-            di += 1
+    settlements = compute_settlements(balances)
 
     users_result = await db.execute(select(User).where(User.id.in_([uuid.UUID(u) for u in balances.keys()])))
     users = {str(u.id): u for u in users_result.scalars().all()}

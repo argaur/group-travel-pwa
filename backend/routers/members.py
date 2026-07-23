@@ -1,8 +1,3 @@
-import base64
-import hmac
-import json
-import time
-
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import select
@@ -14,6 +9,7 @@ from database import get_db
 from models.db import Trip, TripMember, User
 from routers.guards import parse_uuid, require_organizer
 from routers.stream import publish
+from services.invite_tokens import make_invite_token, verify_invite_token
 
 router = APIRouter()
 settings = get_settings()
@@ -49,15 +45,7 @@ async def generate_invite(
     if member is None:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
 
-    payload = {"trip_id": trip_id, "exp": int(time.time()) + 7 * 24 * 60 * 60}
-    payload_json = json.dumps(payload, separators=(",", ":"), sort_keys=True)
-    signature = hmac.new(
-        settings.secret_key.encode("utf-8"),
-        payload_json.encode("utf-8"),
-        "sha256",
-    ).hexdigest()
-    token = base64.urlsafe_b64encode(payload_json.encode("utf-8")).decode("utf-8").rstrip("=")
-    invite_token = f"{token}.{signature}"
+    invite_token = make_invite_token(trip_id, settings.secret_key)
 
     return {"invite_token": invite_token}
 
@@ -70,22 +58,8 @@ async def join_trip(
     user=Depends(get_current_user),
 ):
     try:
-        token_part, signature = body.invite_token.split(".")
-        padded = token_part + "=" * (-len(token_part) % 4)
-        payload_json = base64.urlsafe_b64decode(padded.encode("utf-8")).decode("utf-8")
-        expected = hmac.new(
-            settings.secret_key.encode("utf-8"),
-            payload_json.encode("utf-8"),
-            "sha256",
-        ).hexdigest()
-        if not hmac.compare_digest(expected, signature):
-            raise ValueError("Invalid signature")
-        payload = json.loads(payload_json)
-        if payload.get("trip_id") != trip_id:
-            raise ValueError("Trip mismatch")
-        if int(payload.get("exp", 0)) < int(time.time()):
-            raise ValueError("Expired")
-    except Exception:
+        verify_invite_token(body.invite_token, trip_id, settings.secret_key)
+    except ValueError:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid invite token")
 
     trip_uuid = parse_uuid(trip_id, "trip_id")
