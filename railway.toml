@@ -2,7 +2,13 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "cd backend && alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port $PORT"
+# Migrations are applied out-of-band (locally, against the shared Neon DB), NOT
+# in the start command: running `alembic upgrade head` here blocked every deploy
+# — on Railway the migration step stalled past the healthcheck window, so uvicorn
+# never bound $PORT and Railway kept falling back to the last-good build. Apply
+# migrations with `alembic upgrade head` from backend/ before deploying, or move
+# them to a Railway pre-deploy command once the stall is understood.
+startCommand = "uvicorn main:app --host 0.0.0.0 --port $PORT"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
