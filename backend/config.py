@@ -21,7 +21,8 @@ class Settings(BaseSettings):
         "http://localhost:3000,"
         "https://frontend-rmrv09xjy-argaurs-projects.vercel.app,"
         "https://frontend-lovat-phi-52.vercel.app,"
-        "https://frontend-argaurs-projects.vercel.app"
+        "https://frontend-argaurs-projects.vercel.app,"
+        "https://trivo-argaur.vercel.app"
     )
 
     # Google Places API (optional — demo sample data when empty)
