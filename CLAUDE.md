@@ -69,7 +69,7 @@ group-travel-pwa/
 
 - Apply for Razorpay early — onboarding takes time
 - No Supabase (both slots used) — use Neon only
-- Design spec via /frontend-design skill at dev start — no pre-baked aesthetics
+- Design system is **"The Cartography of a Trip"** — conform to `frontend/DESIGN_CARTOGRAPHY.md` (expedition-map / field-guide: one vermillion accent, squared ink-on-paper, mono marginalia). Do not reintroduce the old Fraunces/DM Sans pastel look.
 - iOS push notifications need PWA installed + iOS 16.4+
 - Confirm before Railway redeploys or Vercel production pushes
 
