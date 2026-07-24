@@ -30,6 +30,7 @@ const plexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://trivo-argaur.vercel.app"),
   title: {
     default: "Trivo — Plan together. Travel better.",
     template: "%s | Trivo",

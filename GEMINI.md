@@ -5,7 +5,7 @@
 Trivo — AI-native group travel planning PWA. Solves budget misalignment, organizer burnout, and no single source of truth for group trips.
 
 ## Stack
-Next.js 14 App Router · TypeScript · Tailwind CSS · Auth.js v5 (Google OAuth) · FastAPI (Python) · PostgreSQL/Neon · Claude API (claude-sonnet-4-6) · Railway (backend) · Vercel (frontend) · next-pwa · SSE (real-time)
+Next.js 16 App Router · TypeScript · Tailwind CSS · Auth.js v5 (Google OAuth) · FastAPI (Python) · PostgreSQL/Neon · Claude API (claude-sonnet-4-6) · Railway (backend) · Vercel (frontend) · next-pwa · SSE (real-time)
 
 ## Current Task
 None active. Last session completed Trivo rebrand + landing page (2026-04-04).
@@ -26,8 +26,8 @@ None active. Last session completed Trivo rebrand + landing page (2026-04-04).
 - `frontend/app/page.tsx` — landing page entry (server auth check → renders LandingPage)
 - `frontend/components/LandingPage.tsx` — full marketing landing page ("use client", 8 sections)
 - `frontend/components/AppShell.tsx` — app sidebar/nav (still says GroupTrip — needs rename)
-- `frontend/app/globals.css` — CSS vars + animations (reveal, gradient-text, grain-overlay, float)
-- `frontend/app/layout.tsx` — fonts (Fraunces + DM Sans), metadata, viewport
+- `frontend/app/globals.css` — CSS vars + "Cartography of a Trip" design system (contours, specimen plates, ledger, route-draw, scroll-reveal); see `frontend/DESIGN_CARTOGRAPHY.md`
+- `frontend/app/layout.tsx` — fonts (Playfair Display + Source Serif 4 + IBM Plex Mono), metadata, viewport
 - `frontend/public/manifest.json` — PWA manifest (name: Trivo, theme: #ff8a6b coral)
 - `frontend/public/icons/trivo-icon.svg` — app icon SVG (T-as-route-marker)
 - `backend/main.py` — FastAPI app entry
