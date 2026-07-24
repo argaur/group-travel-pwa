@@ -22,7 +22,7 @@
 
 | Layer | Tech | Platform | Notes |
 |-------|------|----------|-------|
-| Frontend | Next.js 14 (App Router) + next-pwa | Vercel | Auto-deploys on push to main |
+| Frontend | Next.js 16 (App Router) + next-pwa | Vercel | Auto-deploys on push to main |
 | Backend | FastAPI + SQLAlchemy async | Railway | Auto-deploys on push to main |
 | Database | PostgreSQL (Neon serverless) | Neon | Pooled connection via asyncpg |
 | Auth | Auth.js v5 + Google OAuth | — | JWT exchanged for backend token |
