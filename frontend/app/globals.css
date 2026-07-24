@@ -28,6 +28,7 @@
   --ink-40: rgba(29, 37, 49, 0.40);  /* marginalia, faint labels */
   --ink-15: rgba(29, 37, 49, 0.15);  /* hairlines, dashed rules */
   --ink-08: rgba(29, 37, 49, 0.08);  /* graph-paper grid */
+  --ink-lift: #2a3547;               /* ink, one step lifted - active nav rail */
 
   /* THE single hot accent — route, emphasis, CTA shadow. Nothing else. */
   --accent: #cf3b16;       /* vermillion */
@@ -37,21 +38,6 @@
   --serif: var(--font-display), "Playfair Display", Georgia, serif;
   --body: var(--font-body), "Source Serif 4", Georgia, serif;
   --mono: var(--font-mono), "IBM Plex Mono", Consolas, monospace;
-
-  /* ── Legacy aliases (transitional) ──────────────────────────────────────
-     The pre-cartography screens consume these names as Tailwind arbitrary
-     values (bg-[var(--nav)] etc). They are re-pointed at cartography values
-     so every unmigrated screen harmonizes immediately. Rollout agents:
-     replace usages with the primary tokens above, then delete this block. */
-  --bg: var(--paper);
-  --surface: var(--paper);
-  --muted: var(--ink-60);
-  --nav: var(--ink);
-  --nav-accent: #2a3547;          /* ink, one step lifted — active nav rail */
-  --line: var(--ink-15);
-  --accent-coral: var(--accent);
-  --accent-pink: var(--accent-deep);
-  --accent-lilac: var(--accent-deep);
 }
 
 /* ── Ground ────────────────────────────────────────────────────────────────── */

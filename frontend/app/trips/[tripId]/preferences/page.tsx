@@ -174,7 +174,7 @@ export default function PreferencesPage() {
                 description={p.description}
                 selected={budgetPreset === i}
                 onClick={() => selectBudgetPreset(i)}
-                accentColor="var(--accent-coral)"
+                accentColor="var(--accent)"
               />
             ))}
           </div>
@@ -217,7 +217,7 @@ export default function PreferencesPage() {
               icon={d.icon}
               selected={dietary.includes(d.value)}
               onClick={() => toggleDietary(d.value)}
-              accentColor="var(--accent-pink)"
+              accentColor="var(--accent-deep)"
             />
           ))}
         </div>
@@ -234,7 +234,7 @@ export default function PreferencesPage() {
               icon={s.icon}
               selected={tripStyle === s.value}
               onClick={() => setTripStyle(s.value)}
-              accentColor="var(--accent-lilac)"
+              accentColor="var(--accent-deep)"
             />
           ))}
         </div>
@@ -251,7 +251,7 @@ export default function PreferencesPage() {
                 icon={c.icon}
                 selected={constraints.includes(c.value)}
                 onClick={() => toggleConstraint(c.value)}
-                accentColor="var(--accent-coral)"
+                accentColor="var(--accent)"
               />
             ))}
           </div>

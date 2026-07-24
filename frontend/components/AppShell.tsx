@@ -112,7 +112,7 @@ export default function AppShell({
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
                   fontWeight: isActive ? 700 : 500,
-                  background: isActive ? "var(--nav-accent)" : "transparent",
+                  background: isActive ? "var(--ink-lift)" : "transparent",
                   color: isActive ? "var(--paper)" : "rgba(242,235,219,0.5)",
                   borderLeft: isActive ? "3px solid var(--accent)" : "3px solid transparent",
                 }}

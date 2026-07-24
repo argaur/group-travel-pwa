@@ -80,15 +80,15 @@ anyway, and one authority (the CSS file) beats two.
 **One hot accent.** Nothing else gets color. If something needs a second
 emphasis level, it gets weight, size, or ink density — never a new hue.
 
-### Legacy aliases (transitional — delete when rollout completes)
+### Legacy aliases — removed (rollout complete)
 
-`--bg`, `--surface`, `--muted`, `--nav`, `--nav-accent`, `--line`,
-`--accent-coral`, `--accent-pink`, `--accent-lilac` are aliased to cartography
-values so unmigrated screens harmonize. Likewise the legacy classes `.card`,
-`.card-interactive`, `.card-accent-*`, `.chip`, `.gradient-text`,
-`.animate-fade-up`, `.stagger-child` are re-derived from the new tokens.
-**Rollout task per screen:** replace alias usages with primary tokens/classes,
-then delete the alias block and this section.
+The transitional color-var aliases (`--bg`, `--surface`, `--muted`, `--nav`,
+`--nav-accent`, `--line`, `--accent-coral/pink/lilac`) have been deleted; every
+screen now consumes the primary tokens directly. The one alias that carried a
+unique value, `--nav-accent`, was promoted to the real token `--ink-lift`
+(active nav rail). The re-derived system classes (`.card`, `.card-interactive`,
+`.chip`, `.gradient-text`, `.animate-fade-up`, `.stagger-child`) remain — they
+are part of the design system, not aliases. Do not reintroduce the old vars.
 
 ## 4. Typography
 

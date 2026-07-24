@@ -5,8 +5,8 @@
   "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#0f1222",
-  "theme_color": "#ff8a6b",
+  "background_color": "#f2ebdb",
+  "theme_color": "#cf3b16",
   "categories": ["travel", "productivity"],
   "icons": [
     {
