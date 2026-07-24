@@ -17,7 +17,7 @@ AI-native group trip coordination Progressive Web App. Solves silent budget misa
 
 | Layer | Technology | Hosting |
 |---|---|---|
-| Frontend | Next.js 14 + next-pwa | Vercel |
+| Frontend | Next.js 16 + next-pwa | Vercel |
 | Backend | FastAPI (Python) | Railway |
 | Database | PostgreSQL / Neon | Neon serverless |
 | AI | Claude API (claude-sonnet-4-6) | Anthropic |
@@ -41,7 +41,7 @@ AI-native group trip coordination Progressive Web App. Solves silent budget misa
 
 ```
 group-travel-pwa/
-├── frontend/          # Next.js 14 + next-pwa
+├── frontend/          # Next.js 16 + next-pwa
 │   ├── app/
 │   ├── components/
 │   ├── lib/
@@ -112,7 +112,7 @@ Codex background: `codex exec --prompt "<task>" --full-auto --model gpt-4o-mini 
 ---
 
 ## Status
-- **State:** active
-- **Current task:** V1 MVP scaffolding — WhatsApp invite flow + preference survey
+- **State:** active — V2 live in production (Next.js 16 frontend on Vercel, FastAPI backend on Railway)
+- **Current task:** V2 polish — Trivo rebrand follow-on renames + cartographic frontend redesign
 - **Blocker:** Apply for Razorpay early (onboarding takes time)
-- **Last updated:** 2026-04-14
+- **Last updated:** 2026-07-23

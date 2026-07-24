@@ -17,7 +17,7 @@ AI-native group trip coordination Progressive Web App. Solves silent budget misa
 
 | Layer | Technology | Hosting |
 |---|---|---|
-| Frontend | Next.js 14 + next-pwa | Vercel |
+| Frontend | Next.js 16 + next-pwa | Vercel |
 | Backend | FastAPI (Python) | Railway |
 | Database | PostgreSQL / Neon | Neon serverless |
 | AI | Claude API (claude-sonnet-4-6) | Anthropic |
@@ -31,7 +31,7 @@ AI-native group trip coordination Progressive Web App. Solves silent budget misa
 
 ```
 group-travel-pwa/
-├── frontend/          # Next.js 14 + next-pwa
+├── frontend/          # Next.js 16 + next-pwa
 │   ├── app/
 │   ├── components/
 │   ├── lib/
