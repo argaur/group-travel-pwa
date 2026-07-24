@@ -14,9 +14,9 @@ type RSVPCardProps = {
 }
 
 const OPTIONS = [
-  { value: "going", label: "Going", sublabel: "I'm in — count me!", accent: "var(--accent-pink)" },
-  { value: "maybe", label: "Maybe", sublabel: "Likely, but not sure yet", accent: "var(--accent-coral)" },
-  { value: "declined", label: "Can't make it", sublabel: "I'll sit this one out", accent: "var(--muted)" },
+  { value: "going", label: "Going", sublabel: "I'm in — count me!", mark: "◆" },
+  { value: "maybe", label: "Maybe", sublabel: "Likely, but not sure yet", mark: "◇" },
+  { value: "declined", label: "Can't make it", sublabel: "I'll sit this one out", mark: "✕" },
 ]
 
 export default function RSVPCard({
@@ -56,33 +56,22 @@ export default function RSVPCard({
         : null
 
   return (
-    <div className="relative bg-white border border-[var(--line)] rounded-[4px] max-w-md w-full overflow-hidden">
-      {/* Top accent strip */}
-      <div
-        className="h-1 w-full"
-        style={{ background: "linear-gradient(90deg, var(--accent-coral), var(--accent-pink))" }}
-      />
+    <div className="card relative max-w-md w-full overflow-hidden">
+      {/* Top accent strip — the one hot rule */}
+      <div className="h-1 w-full" style={{ background: "var(--accent)" }} />
 
       <div className="px-7 pt-6 pb-7 space-y-6">
         {/* Invitation header */}
-        <div className="space-y-1 text-center">
-          <p
-            className="text-[13px] text-[var(--muted)]"
-            style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontWeight: 300 }}
-          >
-            You&apos;re invited to
-          </p>
+        <div className="space-y-2 text-center">
+          <p className="m-label">◆ You&apos;re invited to</p>
           <h2
-            className="text-[26px] leading-tight text-[var(--ink)]"
-            style={{ fontFamily: "var(--font-display)", fontWeight: 500 }}
+            className="text-[27px] leading-tight"
+            style={{ fontFamily: "var(--serif)", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.01em" }}
           >
             {tripName}
           </h2>
           {(destination || dateString) && (
-            <p
-              className="text-[13px] text-[var(--muted)] mt-1"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
+            <p className="m-label" style={{ letterSpacing: "0.12em" }}>
               {[destination, dateString].filter(Boolean).join(" · ")}
             </p>
           )}
@@ -102,40 +91,42 @@ export default function RSVPCard({
                 className="w-full text-left transition-all duration-150"
               >
                 <div
-                  className={`flex items-center gap-4 px-4 py-3.5 rounded-[4px] border transition-all duration-150 ${
-                    isSelected
-                      ? "border-2"
-                      : "border border-[var(--line)] hover:border-black/20"
-                  }`}
-                  style={isSelected ? { borderColor: opt.accent, background: `${opt.accent}0d` } : {}}
+                  className="flex items-center gap-4 px-4 py-3.5 transition-all duration-150"
+                  style={{
+                    borderStyle: "solid",
+                    borderWidth: isSelected ? 2 : 1.5,
+                    borderColor: isSelected ? "var(--accent)" : "var(--ink-15)",
+                    background: isSelected ? "var(--paper-edge)" : "var(--paper)",
+                    minHeight: 44,
+                  }}
                 >
-                  {/* Radio circle */}
+                  {/* Squared mark */}
                   <span
-                    className="w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-all duration-150"
-                    style={
-                      isSelected
-                        ? { borderColor: opt.accent, background: opt.accent }
-                        : { borderColor: "var(--line)" }
-                    }
+                    className="shrink-0 flex items-center justify-center transition-all duration-150"
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderStyle: "solid",
+                      borderWidth: isSelected ? 0 : 1.5,
+                      borderColor: "var(--ink-15)",
+                      background: isSelected ? "var(--accent)" : "transparent",
+                      color: isSelected ? "var(--paper)" : "var(--ink-40)",
+                      fontFamily: "var(--mono)",
+                      fontSize: 11,
+                      fontWeight: 700,
+                    }}
                   >
-                    {isSelected && (
-                      <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                        <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                      </svg>
-                    )}
+                    {opt.mark}
                   </span>
 
                   <div className="flex-1 min-w-0">
                     <p
-                      className={`text-[14px] ${isSelected ? "font-medium" : ""}`}
-                      style={{ fontFamily: "var(--font-body)", color: "var(--ink)" }}
+                      className="text-[15px]"
+                      style={{ fontFamily: "var(--body)", color: "var(--ink)", fontWeight: isSelected ? 600 : 400 }}
                     >
                       {isLoading ? "Saving…" : opt.label}
                     </p>
-                    <p
-                      className="text-[12px] text-[var(--muted)] mt-0.5"
-                      style={{ fontFamily: "var(--font-body)" }}
-                    >
+                    <p className="text-[12px] mt-0.5" style={{ fontFamily: "var(--body)", color: "var(--ink-60)" }}>
                       {opt.sublabel}
                     </p>
                   </div>
@@ -149,10 +140,19 @@ export default function RSVPCard({
       {/* Toast */}
       {toast && (
         <div
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-[var(--ink)] text-white text-xs px-4 py-2 rounded-full shadow-lg animate-fade-up"
-          style={{ fontFamily: "var(--font-body)" }}
+          className="absolute bottom-4 left-1/2 -translate-x-1/2 animate-fade-up"
+          style={{
+            background: "var(--ink)",
+            color: "var(--paper)",
+            fontFamily: "var(--mono)",
+            fontSize: 10.5,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            padding: "8px 16px",
+            boxShadow: "3px 3px 0 var(--accent)",
+          }}
         >
-          RSVP saved ✓
+          RSVP logged ◆
         </div>
       )}
     </div>

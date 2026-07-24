@@ -11,12 +11,14 @@ type AvailabilityHeatmapProps = {
   totalMembers: number
 }
 
+/* Conflict intensity as ink density, ramping to the one hot accent at the top.
+   Returns rgba() strings so the border derivation below stays valid. */
 function getHeatColor(blocked: number, total: number): string {
-  if (total === 0 || blocked === 0) return "rgba(15,18,34,0.04)"
+  if (total === 0 || blocked === 0) return "rgba(29,37,49,0.05)"
   const pct = blocked / total
-  if (pct <= 0.3) return "rgba(154,140,255,0.20)"
-  if (pct <= 0.6) return "rgba(255,138,107,0.30)"
-  return "rgba(255,107,154,0.50)"
+  if (pct <= 0.3) return "rgba(29,37,49,0.12)"
+  if (pct <= 0.6) return "rgba(29,37,49,0.28)"
+  return "rgba(207,59,22,0.45)"
 }
 
 function formatDate(iso: string): string {
@@ -27,28 +29,23 @@ function formatDate(iso: string): string {
 export default function AvailabilityHeatmap({ heatmap, totalMembers }: AvailabilityHeatmapProps) {
   if (heatmap.length === 0) {
     return (
-      <p
-        className="text-sm text-[var(--muted)] py-4"
-        style={{ fontFamily: "var(--font-body)" }}
-      >
-        No date conflicts yet — invite your group to mark their availability.
-      </p>
+      <p className="m-label py-4">Nothing charted yet — invite the party to mark availability</p>
     )
   }
 
   return (
     <div className="space-y-4">
       {/* Legend */}
-      <div className="flex flex-wrap items-center gap-3 text-[11px] text-[var(--muted)]" style={{ fontFamily: "var(--font-body)" }}>
+      <div className="flex flex-wrap items-center gap-3 m-label">
         <span>Conflict intensity:</span>
         {[
-          { label: "Low (1–30%)", color: "rgba(154,140,255,0.20)", border: "rgba(154,140,255,0.4)" },
-          { label: "Mid (31–60%)", color: "rgba(255,138,107,0.30)", border: "rgba(255,138,107,0.5)" },
-          { label: "High (61%+)", color: "rgba(255,107,154,0.50)", border: "rgba(255,107,154,0.6)" },
+          { label: "Low (1–30%)", color: "rgba(29,37,49,0.12)", border: "rgba(29,37,49,0.4)" },
+          { label: "Mid (31–60%)", color: "rgba(29,37,49,0.28)", border: "rgba(29,37,49,0.55)" },
+          { label: "High (61%+)", color: "rgba(207,59,22,0.45)", border: "rgba(207,59,22,0.7)" },
         ].map((l) => (
-          <span key={l.label} className="flex items-center gap-1">
+          <span key={l.label} className="flex items-center gap-1.5">
             <span
-              className="inline-block w-3 h-3 rounded-[2px] border"
+              className="inline-block w-3 h-3 border"
               style={{ background: l.color, borderColor: l.border }}
             />
             {l.label}
@@ -56,24 +53,29 @@ export default function AvailabilityHeatmap({ heatmap, totalMembers }: Availabil
         ))}
       </div>
 
-      {/* Date chips */}
+      {/* Date chips — squared grid cells */}
       <div className="flex flex-wrap gap-2">
         {heatmap.map((entry) => {
           const bg = getHeatColor(entry.blocked_count, totalMembers)
           const tooltip = entry.blocked_by.join(", ")
+          const isHigh = totalMembers > 0 && entry.blocked_count / totalMembers > 0.6
           return (
             <div
               key={entry.date}
               title={`Blocked by: ${tooltip}`}
-              className="border rounded-[4px] px-3 py-2 cursor-default transition-all duration-100 hover:scale-105"
+              className="border px-3 py-2 cursor-default"
               style={{
                 background: bg,
                 borderColor: bg.replace(/[\d.]+\)$/, "0.6)"),
-                fontFamily: "var(--font-body)",
               }}
             >
-              <p className="text-[12px] font-medium text-[var(--ink)]">{formatDate(entry.date)}</p>
-              <p className="text-[10px] text-[var(--muted)] mt-0.5 tabular-nums">
+              <p style={{ fontFamily: "var(--mono)", fontSize: 12, fontWeight: 700, color: "var(--ink)", letterSpacing: "0.04em" }}>
+                {formatDate(entry.date)}
+              </p>
+              <p
+                className="mt-0.5 tabular-nums"
+                style={{ fontFamily: "var(--mono)", fontSize: 10, letterSpacing: "0.06em", color: isHigh ? "var(--accent)" : "var(--ink-60)" }}
+              >
                 {entry.blocked_count}/{totalMembers} blocked
               </p>
             </div>
@@ -81,12 +83,7 @@ export default function AvailabilityHeatmap({ heatmap, totalMembers }: Availabil
         })}
       </div>
 
-      <p
-        className="text-[11px] text-[var(--muted)]"
-        style={{ fontFamily: "var(--font-body)" }}
-      >
-        Hover a date to see who blocked it. Dates not shown have zero conflicts.
-      </p>
+      <p className="m-label">Hover a date to see who blocked it. Dates not shown have zero conflicts.</p>
     </div>
   )
 }

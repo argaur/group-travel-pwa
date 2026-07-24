@@ -65,10 +65,7 @@ export default function DateBlockPicker({ tripId, initialBlocks, onChange }: Dat
 
   return (
     <div className="space-y-5">
-      <p
-        className="text-[12px] italic text-[var(--muted)]"
-        style={{ fontFamily: "var(--font-body)" }}
-      >
+      <p className="text-[13px]" style={{ fontFamily: "var(--body)", color: "var(--ink-60)" }}>
         Only aggregate counts are shown to others — not your specific dates.
       </p>
 
@@ -80,20 +77,15 @@ export default function DateBlockPicker({ tripId, initialBlocks, onChange }: Dat
 
         return (
           <div key={`${year}-${month}`} className="space-y-2">
-            <p
-              className="text-[12px] uppercase tracking-widest text-[var(--muted)]"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              {MONTH_NAMES[month]} {year}
-            </p>
+            <p className="m-label">{MONTH_NAMES[month]} {year}</p>
 
             {/* Weekday headers */}
             <div className="grid grid-cols-7 gap-1">
               {WEEKDAYS.map((d) => (
                 <div
                   key={d}
-                  className="text-center text-[10px] text-[var(--muted)] py-1"
-                  style={{ fontFamily: "var(--font-body)" }}
+                  className="text-center py-1"
+                  style={{ fontFamily: "var(--mono)", fontSize: 9.5, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--ink-40)" }}
                 >
                   {d}
                 </div>
@@ -115,23 +107,25 @@ export default function DateBlockPicker({ tripId, initialBlocks, onChange }: Dat
                     type="button"
                     onClick={() => !isPast && toggleDate(iso)}
                     disabled={isPast}
-                    className={`relative w-full aspect-square flex items-center justify-center rounded-[3px] text-[12px] transition-all duration-100 ${
-                      isPast
-                        ? "opacity-30 cursor-not-allowed"
-                        : isBlocked
-                          ? "cursor-pointer"
-                          : "hover:bg-[var(--line)] cursor-pointer"
+                    className={`relative w-full aspect-square flex items-center justify-center text-[12px] transition-all duration-100 ${
+                      isPast ? "opacity-30 cursor-not-allowed" : "cursor-pointer"
                     }`}
                     style={
                       isBlocked
-                        ? { background: "rgba(255, 138, 107, 0.15)", color: "var(--accent-coral)" }
-                        : { fontFamily: "var(--font-body)", color: "var(--ink)" }
+                        ? {
+                            fontFamily: "var(--mono)",
+                            background: "color-mix(in oklab, var(--accent) 15%, var(--paper))",
+                            color: "var(--accent)",
+                            border: "1px solid var(--accent)",
+                            fontWeight: 700,
+                          }
+                        : { fontFamily: "var(--mono)", color: "var(--ink)", border: "1px solid transparent" }
                     }
                     title={isBlocked ? "Blocked — click to unblock" : "Click to block"}
                   >
                     {day}
                     {isBlocked && (
-                      <span className="absolute top-0.5 right-0.5 text-[8px] text-[var(--accent-coral)] leading-none">
+                      <span className="absolute top-0.5 right-0.5 text-[8px] leading-none" style={{ color: "var(--accent)" }}>
                         ✕
                       </span>
                     )}
@@ -145,31 +139,20 @@ export default function DateBlockPicker({ tripId, initialBlocks, onChange }: Dat
 
       {/* Blocked count summary */}
       {blocked.size > 0 && (
-        <p
-          className="text-[12px] text-[var(--muted)]"
-          style={{ fontFamily: "var(--font-body)" }}
-        >
-          {blocked.size} date{blocked.size !== 1 ? "s" : ""} marked as no-go
+        <p className="m-label">
+          <b>{blocked.size}</b> date{blocked.size !== 1 ? "s" : ""} marked as no-go
         </p>
       )}
 
       {/* Save button — only in connected mode */}
       {tripId && (
-        <button
-          type="button"
-          onClick={save}
-          disabled={saving}
-          className="h-10 px-6 rounded-[4px] bg-[var(--ink)] text-white text-sm font-medium disabled:opacity-40 transition-opacity"
-          style={{ fontFamily: "var(--font-body)" }}
-        >
+        <button type="button" onClick={save} disabled={saving} className="cta sm">
           {saving ? "Saving…" : "Save my dates"}
         </button>
       )}
 
       {toast && (
-        <p className="text-[12px] text-emerald-600" style={{ fontFamily: "var(--font-body)" }}>
-          Dates saved ✓
-        </p>
+        <p className="m-label" style={{ color: "var(--accent)", fontWeight: 700 }}>◆ Dates saved</p>
       )}
     </div>
   )

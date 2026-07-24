@@ -45,8 +45,12 @@ export default function TripPlanningGate({
 
   if (!ok) {
     return (
-      <div className="min-h-screen flex items-center justify-center px-6">
-        <p className="text-sm text-[var(--muted)]">Checking your planning access…</p>
+      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "var(--paper)" }}>
+        <div className="w-full max-w-xs">
+          <p className="m-label mb-3">Checking planning access…</p>
+          <div className="skeleton-hatch h-4 w-full mb-2" />
+          <div className="skeleton-hatch h-4 w-2/3" />
+        </div>
       </div>
     )
   }

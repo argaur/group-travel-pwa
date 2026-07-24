@@ -22,11 +22,12 @@ type MemberRosterProps = {
 
 type FilterTab = "all" | "going" | "pending" | "survey"
 
+/* Status → ink density. One hot accent: only "going" runs vermillion. */
 const RSVP_COLORS: Record<string, string> = {
-  going: "var(--accent-pink)",
-  maybe: "var(--accent-coral)",
-  declined: "var(--muted)",
-  pending: "var(--line)",
+  going: "var(--accent)",
+  maybe: "var(--ink)",
+  declined: "var(--ink-40)",
+  pending: "var(--ink-15)",
 }
 
 const RSVP_LABELS: Record<string, string> = {
@@ -34,13 +35,6 @@ const RSVP_LABELS: Record<string, string> = {
   maybe: "Maybe",
   declined: "Can't make it",
   pending: "No response",
-}
-
-function avatarColor(name: string) {
-  const hues = [210, 160, 20, 280, 340, 60, 190]
-  let hash = 0
-  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
-  return `hsl(${hues[Math.abs(hash) % hues.length]}, 55%, 65%)`
 }
 
 export default function MemberRoster({
@@ -100,47 +94,39 @@ export default function MemberRoster({
       {/* Summary chips */}
       <div className="flex flex-wrap gap-2">
         {[
-          { label: "Going", count: counts.going, color: "var(--accent-pink)" },
-          { label: "Maybe", count: counts.maybe, color: "var(--accent-coral)" },
-          { label: "Pending", count: counts.pending, color: "var(--muted)" },
-          { label: "Declined", count: counts.declined, color: "var(--line)" },
+          { label: "Going", count: counts.going, hot: true },
+          { label: "Maybe", count: counts.maybe, hot: false },
+          { label: "Pending", count: counts.pending, hot: false },
+          { label: "Declined", count: counts.declined, hot: false },
         ].map((chip) => (
-          <span
-            key={chip.label}
-            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12px] border border-[var(--line)]"
-            style={{ fontFamily: "var(--font-body)", color: "var(--ink)" }}
-          >
-            <span
-              className="w-2 h-2 rounded-full"
-              style={{ background: chip.color }}
-            />
+          <span key={chip.label} className={`chip${chip.hot ? " hot" : ""}`}>
             {chip.label} · {chip.count}
           </span>
         ))}
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 border-b border-[var(--line)]">
+      <div className="flex gap-1" style={{ borderBottom: "1px solid var(--ink-15)" }}>
         {TABS.map((tab) => (
           <button
             key={tab.key}
             type="button"
             onClick={() => setFilter(tab.key)}
-            className="px-3 py-2 text-[12px] transition-colors relative"
+            className="px-3 py-2 -mb-px transition-colors relative"
             style={{
-              fontFamily: "var(--font-body)",
-              color: filter === tab.key ? "var(--ink)" : "var(--muted)",
+              fontFamily: "var(--mono)",
+              fontSize: 11,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              borderBottom: "2px solid",
+              borderBottomColor: filter === tab.key ? "var(--accent)" : "transparent",
+              color: filter === tab.key ? "var(--ink)" : "var(--ink-60)",
+              fontWeight: filter === tab.key ? 700 : 500,
             }}
           >
             {tab.label}
             {tab.count > 0 && (
-              <span className="ml-1 text-[10px] opacity-60">{tab.count}</span>
-            )}
-            {filter === tab.key && (
-              <span
-                className="absolute bottom-0 left-0 right-0 h-[2px] rounded-full"
-                style={{ background: "var(--accent-lilac)" }}
-              />
+              <span className="ml-1 opacity-60">{tab.count}</span>
             )}
           </button>
         ))}
@@ -154,15 +140,20 @@ export default function MemberRoster({
           return (
             <li
               key={m.user.id}
-              className="flex items-center gap-3 px-4 py-3 rounded-[4px] border border-[var(--line)] relative overflow-hidden"
-              style={{ borderLeft: `3px solid ${RSVP_COLORS[rsvp] ?? "var(--line)"}` }}
+              className="card flat flex items-center gap-3 px-4 py-3 relative overflow-hidden"
+              style={{ borderLeftWidth: 3, borderLeftColor: RSVP_COLORS[rsvp] ?? "var(--ink-15)" }}
             >
-              {/* Avatar */}
+              {/* Avatar — squared ink specimen */}
               <div
-                className="w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-white text-[13px] font-medium"
+                className="shrink-0 flex items-center justify-center overflow-hidden"
                 style={{
-                  background: m.user.avatar_url ? "transparent" : avatarColor(m.user.name),
-                  fontFamily: "var(--font-body)",
+                  width: 36,
+                  height: 36,
+                  background: m.user.avatar_url ? "transparent" : "var(--ink)",
+                  color: "var(--paper)",
+                  fontFamily: "var(--mono)",
+                  fontSize: 13,
+                  fontWeight: 700,
                 }}
               >
                 {m.user.avatar_url ? (
@@ -170,7 +161,8 @@ export default function MemberRoster({
                   <img
                     src={m.user.avatar_url}
                     alt={m.user.name}
-                    className="w-full h-full rounded-full object-cover"
+                    className="w-full h-full object-cover"
+                    style={{ filter: "saturate(0.85)" }}
                   />
                 ) : (
                   m.user.name.charAt(0).toUpperCase()
@@ -179,19 +171,11 @@ export default function MemberRoster({
 
               {/* Info */}
               <div className="flex-1 min-w-0">
-                <p
-                  className="text-[14px] font-medium text-[var(--ink)] truncate"
-                  style={{ fontFamily: "var(--font-body)" }}
-                >
+                <p className="text-[15px] truncate" style={{ fontFamily: "var(--body)", fontWeight: 600, color: "var(--ink)" }}>
                   {m.user.name}
-                  {isMe && (
-                    <span className="ml-1.5 text-[10px] text-[var(--muted)] font-normal">(you)</span>
-                  )}
+                  {isMe && <span className="ml-1.5 m-label">(you)</span>}
                 </p>
-                <p
-                  className="text-[11px] text-[var(--muted)] mt-0.5"
-                  style={{ fontFamily: "var(--font-body)" }}
-                >
+                <p className="m-label mt-0.5" style={{ letterSpacing: "0.12em" }}>
                   {m.role === "organizer" ? "Organizer" : "Member"}
                   {m.is_creator ? " · Trip creator" : ""}
                 </p>
@@ -200,21 +184,11 @@ export default function MemberRoster({
               {/* Badges */}
               <div className="flex items-center gap-1.5 shrink-0">
                 {m.preference_submitted && (
-                  <span
-                    className="text-[10px] px-2 py-0.5 rounded-full border border-[var(--accent-lilac)]/40 text-[var(--accent-lilac)]"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  >
-                    Survey ✓
-                  </span>
+                  <span className="chip hot">Survey ◆</span>
                 )}
                 <span
-                  className="text-[10px] px-2 py-0.5 rounded-full"
-                  style={{
-                    fontFamily: "var(--font-body)",
-                    background: `${RSVP_COLORS[rsvp]}20`,
-                    color: RSVP_COLORS[rsvp],
-                    border: `1px solid ${RSVP_COLORS[rsvp]}40`,
-                  }}
+                  className="chip"
+                  style={{ borderColor: RSVP_COLORS[rsvp], color: rsvp === "going" ? "var(--accent)" : "var(--ink-60)" }}
                 >
                   {RSVP_LABELS[rsvp]}
                 </span>
@@ -225,26 +199,15 @@ export default function MemberRoster({
       </ul>
 
       {filtered.length === 0 && (
-        <p
-          className="text-[13px] text-[var(--muted)] text-center py-6"
-          style={{ fontFamily: "var(--font-body)" }}
-        >
-          No members in this view.
-        </p>
+        <p className="m-label text-center py-6">Nobody charted in this view</p>
       )}
 
       {/* Transfer leadership */}
       {isOrganizer && members.length > 1 && (
-        <div className="pt-4 border-t border-[var(--line)] space-y-3">
-          <p
-            className="text-[12px] uppercase tracking-widest text-[var(--muted)]"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
-            Transfer leadership
-          </p>
+        <div className="pt-4 space-y-3" style={{ borderTop: "2px solid var(--ink)" }}>
+          <p className="field-label">Transfer leadership</p>
           <select
-            className="w-full border border-[var(--line)] rounded-[4px] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
-            style={{ fontFamily: "var(--font-body)", color: "var(--ink)" }}
+            className="field-select"
             value={transferTo}
             onChange={(e) => setTransferTo(e.target.value)}
           >
@@ -259,20 +222,14 @@ export default function MemberRoster({
           </select>
           <button
             type="button"
-            className="w-full h-10 rounded-[4px] border border-[var(--ink)] text-[var(--ink)] text-[13px] disabled:opacity-40 transition-opacity"
-            style={{ fontFamily: "var(--font-body)" }}
+            className="cta sm w-full"
             disabled={!transferTo || transferring}
             onClick={handleTransfer}
           >
             {transferring ? "Transferring…" : "Transfer to selected member"}
           </button>
           {transferMsg && (
-            <p
-              className="text-[12px] text-[var(--muted)]"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              {transferMsg}
-            </p>
+            <p className="m-label">{transferMsg}</p>
           )}
         </div>
       )}

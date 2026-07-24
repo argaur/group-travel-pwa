@@ -1,27 +1,31 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
-import { Fraunces, DM_Sans } from "next/font/google";
+import { Playfair_Display, Source_Serif_4, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-
-const fraunces = Fraunces({
+// "The Cartography of a Trip" — three voices, three jobs. Never mix them.
+// Display: Playfair Display — headlines + the italic-vermillion emphasis word.
+const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-display",
-  weight: ["300", "500", "700"],
+  weight: ["500", "600", "700"],
   style: ["normal", "italic"],
   display: "swap",
 });
 
-const dmSans = DM_Sans({
+// Body: Source Serif 4 — prose, descriptions, anything read in sentences.
+const sourceSerif = Source_Serif_4({
   subsets: ["latin"],
   variable: "--font-body",
-  weight: ["300", "400", "500", "600"],
+  weight: ["400", "500", "600"],
+  display: "swap",
+});
+
+// Marginalia: IBM Plex Mono — all map chrome. Always UPPERCASE + tracked wide.
+const plexMono = IBM_Plex_Mono({
+  subsets: ["latin"],
+  variable: "--font-mono",
+  weight: ["400", "500", "700"],
   display: "swap",
 });
 
@@ -56,7 +60,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#ff8a6b",
+  themeColor: "#cf3b16",
 };
 
 export default function RootLayout({
@@ -65,10 +69,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${fraunces.variable} ${dmSans.variable} antialiased`}
-      >
+    // Font variables live on <html>, not <body>: the token stacks in
+    // globals.css (--serif/--body/--mono) are defined on :root and resolve
+    // var(--font-*) there — on <body> they'd be invisible to :root and the
+    // whole font stack would compute to invalid.
+    <html lang="en" className={`${playfair.variable} ${sourceSerif.variable} ${plexMono.variable}`}>
+      <body className="antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

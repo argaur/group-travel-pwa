@@ -88,7 +88,11 @@ export default function RSVPPage() {
       subtitle={trip?.name ?? ""}
     >
       {loading ? (
-        <p className="text-sm text-[var(--muted)]">Loading…</p>
+        <div className="max-w-md">
+          <p className="m-label mb-3">Plotting the muster…</p>
+          <div className="skeleton-hatch h-4 w-full mb-2" />
+          <div className="skeleton-hatch h-4 w-4/5" />
+        </div>
       ) : (
         <div className="space-y-10 max-w-2xl">
           {/* My RSVP card */}
@@ -106,23 +110,20 @@ export default function RSVPPage() {
 
           {/* Availability link */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-[var(--line)]" />
-            <a
-              href={`/trips/${params.tripId}/availability`}
-              className="text-[12px] text-[var(--muted)] hover:text-[var(--ink)] transition-colors whitespace-nowrap"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
+            <div className="flex-1 h-px" style={{ background: "var(--ink-15)" }} />
+            <a href={`/trips/${params.tripId}/availability`} className="cta-ghost whitespace-nowrap">
               Mark your no-go dates →
             </a>
-            <div className="flex-1 h-px bg-[var(--line)]" />
+            <div className="flex-1 h-px" style={{ background: "var(--ink-15)" }} />
           </div>
 
           {/* Member grid */}
           <div className="space-y-3">
-            <h2
-              className="text-[22px]"
-              style={{ fontFamily: "var(--font-display)", fontWeight: 300 }}
-            >
+            <div className="flex items-baseline gap-3">
+              <span className="fig-tag" style={{ flexShrink: 0 }}><b>◆</b> The muster roll</span>
+              <div className="flex-1 h-px" style={{ background: "var(--ink-15)" }} />
+            </div>
+            <h2 className="text-[24px]" style={{ fontFamily: "var(--serif)", fontWeight: 600, color: "var(--ink)" }}>
               Who&apos;s coming?
             </h2>
             <MemberRSVPGrid

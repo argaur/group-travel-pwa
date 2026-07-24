@@ -180,40 +180,23 @@ export default function PreferencesPage() {
           </div>
 
           <div>
-            <p
-              className="text-[11px] uppercase tracking-widest text-[var(--muted)] mb-2"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              Or set a custom range (₹/day)
-            </p>
+            <p className="field-label mb-2">Or set a custom range (₹/day)</p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label
-                  className="block text-[11px] text-[var(--muted)] mb-1"
-                  style={{ fontFamily: "var(--font-body)" }}
-                >
-                  Min
-                </label>
+                <label className="field-label block mb-1">Min</label>
                 <input
                   type="number"
-                  className="w-full border border-[var(--line)] rounded-[4px] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
-                  style={{ fontFamily: "var(--font-body)" }}
+                  className="field-input"
                   value={budgetMin}
                   onChange={(e) => handleCustomBudget("min", e.target.value)}
                   min={0}
                 />
               </div>
               <div>
-                <label
-                  className="block text-[11px] text-[var(--muted)] mb-1"
-                  style={{ fontFamily: "var(--font-body)" }}
-                >
-                  Max
-                </label>
+                <label className="field-label block mb-1">Max</label>
                 <input
                   type="number"
-                  className="w-full border border-[var(--line)] rounded-[4px] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
-                  style={{ fontFamily: "var(--font-body)" }}
+                  className="field-input"
                   value={budgetMax}
                   onChange={(e) => handleCustomBudget("max", e.target.value)}
                   min={0}
@@ -274,15 +257,10 @@ export default function PreferencesPage() {
           </div>
 
           <div>
-            <label
-              className="block text-[12px] uppercase tracking-widest text-[var(--muted)] mb-2"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              Anything else? (optional)
-            </label>
+            <label className="field-label block mb-2">Anything else? (optional)</label>
             <textarea
-              className="w-full border border-[var(--line)] rounded-[4px] px-4 py-3 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white resize-none"
-              style={{ fontFamily: "var(--font-body)", color: "var(--ink)" }}
+              className="field-input resize-none"
+              style={{ minHeight: "auto" }}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               rows={3}

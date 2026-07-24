@@ -134,15 +134,9 @@ export default function NewTripPage() {
       {step === 0 && (
         <div className="space-y-6">
           <div>
-            <label
-              className="block text-[12px] uppercase tracking-widest text-[var(--muted)] mb-2"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              Trip name *
-            </label>
+            <label className="field-label block mb-2">Trip name *</label>
             <input
-              className="w-full border border-[var(--line)] rounded-[4px] px-4 py-3 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
-              style={{ fontFamily: "var(--font-body)", color: "var(--ink)" }}
+              className="field-input"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. Goa Weekend Escape"
@@ -151,12 +145,7 @@ export default function NewTripPage() {
           </div>
 
           <div>
-            <label
-              className="block text-[12px] uppercase tracking-widest text-[var(--muted)] mb-3"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              Trip type
-            </label>
+            <label className="field-label block mb-3">Trip type</label>
             <div className="grid grid-cols-2 gap-2">
               {TRIP_TYPES.map((t) => (
                 <OptionTile
@@ -187,21 +176,15 @@ export default function NewTripPage() {
                 placeholder="Search Google Places…"
               />
               {destination && (
-                <p
-                  className="text-[11px] text-[var(--muted)]"
-                  style={{ fontFamily: "var(--font-body)" }}
-                >
+                <p className="text-[12px]" style={{ fontFamily: "var(--body)", color: "var(--ink-60)" }}>
                   Type to search, or continue with this text as-is.
                 </p>
               )}
             </>
           )}
 
-          <p
-            className="text-[12px] text-[var(--muted)] pt-2"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
-            Destination is optional — you can decide later with the group.
+          <p className="text-[13px] pt-2" style={{ fontFamily: "var(--body)", color: "var(--ink-60)" }}>
+            Destination is optional — you can chart it later with the group.
           </p>
         </div>
       )}
@@ -211,31 +194,19 @@ export default function NewTripPage() {
         <div className="space-y-5">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label
-                className="block text-[12px] uppercase tracking-widest text-[var(--muted)] mb-2"
-                style={{ fontFamily: "var(--font-body)" }}
-              >
-                Start date
-              </label>
+              <label className="field-label block mb-2">Start date</label>
               <input
                 type="date"
-                className="w-full border border-[var(--line)] rounded-[4px] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
-                style={{ fontFamily: "var(--font-body)" }}
+                className="field-input"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
               />
             </div>
             <div>
-              <label
-                className="block text-[12px] uppercase tracking-widest text-[var(--muted)] mb-2"
-                style={{ fontFamily: "var(--font-body)" }}
-              >
-                End date
-              </label>
+              <label className="field-label block mb-2">End date</label>
               <input
                 type="date"
-                className="w-full border border-[var(--line)] rounded-[4px] px-3 py-2.5 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
-                style={{ fontFamily: "var(--font-body)" }}
+                className="field-input"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
               />
@@ -243,15 +214,9 @@ export default function NewTripPage() {
           </div>
 
           <div>
-            <label
-              className="block text-[12px] uppercase tracking-widest text-[var(--muted)] mb-2"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              Group size estimate
-            </label>
+            <label className="field-label block mb-2">Group size estimate</label>
             <input
-              className="w-full border border-[var(--line)] rounded-[4px] px-4 py-3 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors bg-white"
-              style={{ fontFamily: "var(--font-body)", color: "var(--ink)" }}
+              className="field-input"
               value={groupSize}
               onChange={(e) => setGroupSize(e.target.value)}
               type="number"
@@ -261,12 +226,9 @@ export default function NewTripPage() {
           </div>
 
           {error && (
-            <p
-              className="text-[13px] text-red-600"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              {error}
-            </p>
+            <div className="alert-plate">
+              <p className="m-label" style={{ color: "var(--accent)", fontWeight: 700 }}>⚑ {error}</p>
+            </div>
           )}
         </div>
       )}

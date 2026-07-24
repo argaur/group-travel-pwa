@@ -17,21 +17,18 @@ type MemberRSVPGridProps = {
   currentUserId: string
 }
 
-const STATUS_CONFIG: Record<string, { label: string; bg: string; text: string; borderColor: string }> = {
-  going: { label: "Going", bg: "bg-[var(--accent-pink)]/10", text: "text-[var(--accent-pink)]", borderColor: "var(--accent-pink)" },
-  maybe: { label: "Maybe", bg: "bg-[var(--accent-coral)]/10", text: "text-[var(--accent-coral)]", borderColor: "var(--accent-coral)" },
-  declined: { label: "Declined", bg: "bg-[var(--muted)]/10", text: "text-[var(--muted)]", borderColor: "var(--line)" },
-  pending: { label: "Pending", bg: "bg-[var(--line)]", text: "text-[var(--muted)]", borderColor: "var(--line)" },
+/* Status → ink density. One hot accent: only "going" runs vermillion. */
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  going: { label: "Going", color: "var(--accent)" },
+  maybe: { label: "Maybe", color: "var(--ink)" },
+  declined: { label: "Declined", color: "var(--ink-40)" },
+  pending: { label: "Pending", color: "var(--ink-15)" },
 }
 
 type FilterTab = "all" | "going" | "pending" | "survey_done"
 
 function Avatar({ name, avatarUrl, size = 40 }: { name: string; avatarUrl: string | null; size?: number }) {
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-  // Deterministic color from name
-  const colors = ["#ff6b9a", "#ff8a6b", "#9a8cff", "#6bc5ff", "#6bffb8"]
-  const colorIndex = name.charCodeAt(0) % colors.length
-  const bg = colors[colorIndex]
 
   if (avatarUrl) {
     return (
@@ -41,15 +38,24 @@ function Avatar({ name, avatarUrl, size = 40 }: { name: string; avatarUrl: strin
         alt={name}
         width={size}
         height={size}
-        className="rounded-full object-cover shrink-0"
-        style={{ width: size, height: size }}
+        className="object-cover shrink-0"
+        style={{ width: size, height: size, filter: "saturate(0.85)", border: "1.5px solid var(--ink)" }}
       />
     )
   }
   return (
     <div
-      className="rounded-full flex items-center justify-center text-white shrink-0 text-[11px] font-semibold"
-      style={{ width: size, height: size, background: bg, fontFamily: "var(--font-body)" }}
+      className="flex items-center justify-center shrink-0"
+      style={{
+        width: size,
+        height: size,
+        background: "var(--ink)",
+        color: "var(--paper)",
+        fontFamily: "var(--mono)",
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: "0.05em",
+      }}
     >
       {initials}
     </div>
@@ -86,38 +92,35 @@ export default function MemberRSVPGrid({ members, currentUserId }: MemberRSVPGri
       {/* Summary chips */}
       <div className="flex flex-wrap gap-2">
         {[
-          { label: `${counts.going} Going`, color: "var(--accent-pink)" },
-          { label: `${counts.maybe} Maybe`, color: "var(--accent-coral)" },
-          { label: `${counts.pending} Pending`, color: "var(--muted)" },
-          { label: `${counts.declined} Declined`, color: "var(--line)" },
+          { label: `${counts.going} Going`, hot: true },
+          { label: `${counts.maybe} Maybe`, hot: false },
+          { label: `${counts.pending} Pending`, hot: false },
+          { label: `${counts.declined} Declined`, hot: false },
         ].map((chip) => (
-          <span
-            key={chip.label}
-            className="text-[11px] px-3 py-1 rounded-full border"
-            style={{
-              fontFamily: "var(--font-body)",
-              borderColor: chip.color,
-              color: chip.color === "var(--line)" ? "var(--muted)" : chip.color,
-            }}
-          >
+          <span key={chip.label} className={`chip${chip.hot ? " hot" : ""}`}>
             {chip.label}
           </span>
         ))}
       </div>
 
       {/* Filter tabs */}
-      <div className="flex gap-1 border-b border-[var(--line)]">
+      <div className="flex gap-1" style={{ borderBottom: "1px solid var(--ink-15)" }}>
         {tabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
             onClick={() => setFilter(tab.id)}
-            className={`px-3 py-2 text-[12px] border-b-2 -mb-px transition-colors duration-100 ${
-              filter === tab.id
-                ? "border-[var(--accent-lilac)] text-[var(--ink)] font-medium"
-                : "border-transparent text-[var(--muted)] hover:text-[var(--ink)]"
-            }`}
-            style={{ fontFamily: "var(--font-body)" }}
+            className="px-3 py-2 -mb-px transition-colors duration-100"
+            style={{
+              fontFamily: "var(--mono)",
+              fontSize: 11,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              borderBottom: "2px solid",
+              borderBottomColor: filter === tab.id ? "var(--accent)" : "transparent",
+              color: filter === tab.id ? "var(--ink)" : "var(--ink-60)",
+              fontWeight: filter === tab.id ? 700 : 500,
+            }}
           >
             {tab.label}
             {tab.count > 0 && (
@@ -130,9 +133,7 @@ export default function MemberRSVPGrid({ members, currentUserId }: MemberRSVPGri
       {/* Member list */}
       <div className="space-y-2">
         {filtered.length === 0 && (
-          <p className="text-sm text-[var(--muted)] py-4" style={{ fontFamily: "var(--font-body)" }}>
-            No members in this category.
-          </p>
+          <p className="m-label py-4">Nobody charted in this category</p>
         )}
         {filtered.map((m) => {
           const statusCfg = STATUS_CONFIG[m.rsvp_status] ?? STATUS_CONFIG.pending
@@ -140,50 +141,35 @@ export default function MemberRSVPGrid({ members, currentUserId }: MemberRSVPGri
           return (
             <div
               key={m.user_id}
-              className="stagger-child bg-white border border-[var(--line)] rounded-[4px] px-4 py-3 flex items-center gap-3"
-              style={{ borderLeft: `3px solid ${statusCfg.borderColor}` }}
+              className="stagger-child card flat px-4 py-3 flex items-center gap-3"
+              style={{ borderLeftWidth: 3, borderLeftColor: statusCfg.color }}
             >
               <Avatar name={m.name} avatarUrl={m.avatar_url} size={40} />
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span
-                    className="text-[14px] font-medium"
-                    style={{ fontFamily: "var(--font-body)", color: "var(--ink)" }}
+                    className="text-[15px]"
+                    style={{ fontFamily: "var(--body)", fontWeight: 600, color: "var(--ink)" }}
                   >
                     {m.name}
-                    {isMe && <span className="ml-1 text-[11px] text-[var(--muted)]">(you)</span>}
+                    {isMe && <span className="ml-1 m-label">(you)</span>}
                   </span>
                   {m.role === "organizer" && (
-                    <span
-                      className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full bg-[var(--ink)]/8 text-[var(--muted)]"
-                      style={{ fontFamily: "var(--font-body)" }}
-                    >
-                      Organizer
-                    </span>
+                    <span className="chip">Organizer</span>
                   )}
                 </div>
-                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
                   <span
-                    className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${statusCfg.bg} ${statusCfg.text}`}
-                    style={{ fontFamily: "var(--font-body)" }}
+                    className="chip"
+                    style={{ borderColor: statusCfg.color, color: m.rsvp_status === "going" ? "var(--accent)" : "var(--ink-60)" }}
                   >
                     {statusCfg.label}
                   </span>
                   {m.preference_submitted ? (
-                    <span
-                      className="text-[11px] text-emerald-600 font-medium"
-                      style={{ fontFamily: "var(--font-body)" }}
-                    >
-                      Survey ✓
-                    </span>
+                    <span className="m-label" style={{ color: "var(--accent)", fontWeight: 700 }}>◆ Survey in</span>
                   ) : (
-                    <span
-                      className="text-[11px] text-[var(--muted)]"
-                      style={{ fontFamily: "var(--font-body)" }}
-                    >
-                      Survey pending
-                    </span>
+                    <span className="m-label" style={{ color: "var(--ink-40)" }}>○ Survey due</span>
                   )}
                 </div>
               </div>

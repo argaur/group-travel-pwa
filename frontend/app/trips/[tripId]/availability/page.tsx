@@ -47,15 +47,20 @@ export default function AvailabilityPage() {
       subtitle="Mark dates that don't work for you"
     >
       {loading ? (
-        <p className="text-sm text-[var(--muted)]">Loading…</p>
+        <div className="max-w-md">
+          <p className="m-label mb-3">Plotting the calendar…</p>
+          <div className="skeleton-hatch h-4 w-full mb-2" />
+          <div className="skeleton-hatch h-4 w-4/5" />
+        </div>
       ) : (
         <div className="grid gap-10 lg:grid-cols-2 max-w-4xl">
           {/* Left: my date picker */}
           <div className="space-y-4">
-            <h2
-              className="text-[22px]"
-              style={{ fontFamily: "var(--font-display)", fontWeight: 300 }}
-            >
+            <div className="flex items-baseline gap-3">
+              <span className="fig-tag" style={{ flexShrink: 0 }}><b>№ 01</b> Your bearings</span>
+              <div className="flex-1 h-px" style={{ background: "var(--ink-15)" }} />
+            </div>
+            <h2 className="text-[24px]" style={{ fontFamily: "var(--serif)", fontWeight: 600, color: "var(--ink)" }}>
               My no-go dates
             </h2>
             <DateBlockPicker
@@ -70,10 +75,11 @@ export default function AvailabilityPage() {
 
           {/* Right: group heatmap */}
           <div className="space-y-4">
-            <h2
-              className="text-[22px]"
-              style={{ fontFamily: "var(--font-display)", fontWeight: 300 }}
-            >
+            <div className="flex items-baseline gap-3">
+              <span className="fig-tag" style={{ flexShrink: 0 }}><b>FIG. 1</b> The overlap window</span>
+              <div className="flex-1 h-px" style={{ background: "var(--ink-15)" }} />
+            </div>
+            <h2 className="text-[24px]" style={{ fontFamily: "var(--serif)", fontWeight: 600, color: "var(--ink)" }}>
               Group availability
             </h2>
             <AvailabilityHeatmap

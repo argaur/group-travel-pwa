@@ -83,91 +83,111 @@ function TasksContent() {
       subtitle="Distribute planning work across members"
     >
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-        <form onSubmit={createTask} className="card p-5 space-y-3">
-          <h2 className="text-lg font-semibold">Create task</h2>
-          <input
-            className="w-full border border-black/10 rounded-xl px-3 py-2"
-            placeholder="Task title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-          <select
-            className="w-full border border-black/10 rounded-xl px-3 py-2"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option value="flights">Flights</option>
-            <option value="accommodation">Accommodation</option>
-            <option value="food">Food</option>
-            <option value="transport">Transport</option>
-            <option value="activities">Activities</option>
-            <option value="documents">Documents</option>
-            <option value="other">Other</option>
-          </select>
-          <select
-            className="w-full border border-black/10 rounded-xl px-3 py-2"
-            value={assignedTo}
-            onChange={(e) => setAssignedTo(e.target.value)}
-          >
-            <option value="">Assign to… (optional)</option>
-            {members.map((m) => (
-              <option key={m.user.id} value={m.user.id}>
-                {m.user.name}
-              </option>
-            ))}
-          </select>
-          <input
-            type="date"
-            className="w-full border border-black/10 rounded-xl px-3 py-2"
-            value={dueDate}
-            onChange={(e) => setDueDate(e.target.value)}
-          />
-          <button className="w-full rounded-full bg-[var(--ink)] text-white px-4 py-2">
-            Add task
+        <form onSubmit={createTask} className="card p-5 md:p-6 space-y-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-xl" style={{ fontFamily: "var(--serif)", fontWeight: 600 }}>Create task</h2>
+            <span className="m-label">New entry</span>
+          </div>
+          <div>
+            <label className="field-label block mb-1.5">Task title</label>
+            <input
+              className="field-input"
+              placeholder="e.g. Book the stay"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="field-label block mb-1.5">Category</label>
+            <select className="field-select" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="flights">Flights</option>
+              <option value="accommodation">Accommodation</option>
+              <option value="food">Food</option>
+              <option value="transport">Transport</option>
+              <option value="activities">Activities</option>
+              <option value="documents">Documents</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div>
+            <label className="field-label block mb-1.5">Assign to</label>
+            <select className="field-select" value={assignedTo} onChange={(e) => setAssignedTo(e.target.value)}>
+              <option value="">Assign to… (optional)</option>
+              {members.map((m) => (
+                <option key={m.user.id} value={m.user.id}>
+                  {m.user.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="field-label block mb-1.5">Due date</label>
+            <input
+              type="date"
+              className="field-input"
+              value={dueDate}
+              onChange={(e) => setDueDate(e.target.value)}
+            />
+          </div>
+          <button className="cta sm w-full">
+            Add task <span className="arrow" aria-hidden="true">→</span>
           </button>
         </form>
 
-        <div className="card p-5 space-y-3">
-          <h2 className="text-lg font-semibold">Active tasks</h2>
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border border-black/5 rounded-2xl px-4 py-3"
-            >
-              <div>
-                <p className="font-medium">{task.title}</p>
-                <p className="text-xs text-[var(--muted)]">
-                  {task.category} · {task.status} · Assigned: {assigneeName(task.assigned_to)}
-                  {task.due_date ? ` · Due ${task.due_date}` : ""}
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {task.status !== "done" && (
-                  <>
-                    <button
-                      type="button"
-                      className="text-xs rounded-full border border-black/10 px-3 py-1"
-                      onClick={() => markDone(task.id)}
+        <div className="card p-5 md:p-6">
+          <div className="flex items-baseline justify-between gap-3 mb-2">
+            <h2 className="text-xl" style={{ fontFamily: "var(--serif)", fontWeight: 600 }}>The manifest</h2>
+            <span className="m-label"><b>{tasks.length}</b> logged</span>
+          </div>
+          <ul>
+            {tasks.map((task) => {
+              const isDone = task.status === "done"
+              return (
+                <li
+                  key={task.id}
+                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 py-3.5"
+                  style={{ borderTop: "1px dashed var(--ink-15)" }}
+                >
+                  <div className="min-w-0">
+                    <p
+                      className="text-[15px]"
+                      style={{
+                        fontFamily: "var(--body)",
+                        fontWeight: 600,
+                        color: isDone ? "var(--ink-40)" : "var(--ink)",
+                        textDecoration: isDone ? "line-through" : undefined,
+                        textDecorationColor: "var(--accent)",
+                      }}
                     >
-                      Mark done
-                    </button>
-                    {task.assigned_to && (
-                      <button
-                        type="button"
-                        className="text-xs rounded-full border border-black/10 px-3 py-1"
-                        onClick={() => nudge(task.id)}
-                      >
-                        Nudge assignee
-                      </button>
+                      {task.title}
+                    </p>
+                    <p className="m-label mt-1" style={{ letterSpacing: "0.12em" }}>
+                      {task.category} · {task.status} · {assigneeName(task.assigned_to)}
+                      {task.due_date ? ` · Due ${task.due_date}` : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2 shrink-0">
+                    {!isDone && (
+                      <>
+                        <button type="button" className="cta-ghost" onClick={() => markDone(task.id)}>
+                          Mark done
+                        </button>
+                        {task.assigned_to && (
+                          <button type="button" className="cta-ghost" onClick={() => nudge(task.id)}>
+                            Nudge
+                          </button>
+                        )}
+                      </>
                     )}
-                  </>
-                )}
-              </div>
-            </div>
-          ))}
+                    {isDone && <span className="chip hot">◆ Done</span>}
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
           {tasks.length === 0 && (
-            <p className="text-sm text-[var(--muted)]">No tasks yet.</p>
+            <p className="m-label py-4">Nothing charted yet — add the first task</p>
           )}
         </div>
       </div>

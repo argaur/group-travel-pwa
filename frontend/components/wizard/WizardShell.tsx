@@ -1,5 +1,7 @@
 "use client"
 
+import { Contours } from "@/components/Contours"
+
 type WizardShellProps = {
   steps: string[]
   currentStep: number
@@ -35,59 +37,51 @@ export default function WizardShell({
   const progress = ((currentStep + 1) / steps.length) * 100
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] flex flex-col">
-      {/* Progress bar */}
-      <div className="h-[3px] bg-[var(--line)] relative">
+    <div className="min-h-screen flex flex-col relative overflow-hidden" style={{ background: "var(--paper)" }}>
+      <Contours fixed />
+
+      {/* Route progress — the plan drawing itself, step by step */}
+      <div style={{ height: 3, background: "var(--ink-15)", position: "relative" }}>
         <div
-          className="h-full bg-[var(--accent-lilac)] transition-all duration-500 ease-out"
-          style={{ width: `${progress}%` }}
+          className="h-full transition-all duration-500 ease-out"
+          style={{ width: `${progress}%`, background: "var(--accent)" }}
         />
       </div>
 
-      <div className="flex-1 px-6 py-10 max-w-lg mx-auto w-full flex flex-col">
+      <div className="flex-1 px-6 py-10 max-w-lg mx-auto w-full flex flex-col relative z-10">
         {/* Step indicator */}
-        <div
-          className="text-[11px] uppercase tracking-widest text-[var(--muted)] mb-6"
-          style={{ fontFamily: "var(--font-body)" }}
-        >
-          Step {currentStep + 1} of {steps.length} · {steps[currentStep]}
-        </div>
+        <span className="fig-tag" style={{ marginBottom: 22 }}>
+          <b>№ {String(currentStep + 1).padStart(2, "0")}</b> {steps[currentStep]} · {currentStep + 1} of {steps.length}
+        </span>
 
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8 mt-2">
           <h1
-            className="text-[36px] leading-tight text-[var(--ink)]"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontStyle: "italic",
-              fontWeight: 300,
-            }}
+            className="text-[34px] md:text-[40px] leading-tight"
+            style={{ fontFamily: "var(--serif)", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.01em" }}
           >
             {title}
           </h1>
           {subtitle && (
-            <p
-              className="text-[14px] text-[var(--muted)] mt-2"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
+            <p className="text-[15px] mt-3" style={{ fontFamily: "var(--body)", color: "var(--ink-60)" }}>
               {subtitle}
             </p>
           )}
         </div>
 
-        {/* Step dots */}
+        {/* Step ticks — waypoints along the route */}
         <div className="flex gap-1.5 mb-8">
           {steps.map((_, i) => (
             <div
               key={i}
-              className="h-1 rounded-full flex-1 transition-all duration-300"
+              className="h-[3px] flex-1 transition-all duration-300"
               style={{
                 background:
                   i < currentStep
-                    ? "var(--accent-lilac)"
+                    ? "var(--accent)"
                     : i === currentStep
                     ? "var(--ink)"
-                    : "var(--line)",
+                    : "var(--ink-15)",
               }}
             />
           ))}
@@ -97,13 +91,12 @@ export default function WizardShell({
         <div className="flex-1">{children}</div>
 
         {/* Navigation */}
-        <div className="mt-8 flex gap-3">
+        <div className="mt-8 flex gap-3 items-stretch">
           {onBack && currentStep > 0 && (
             <button
               type="button"
               onClick={onBack}
-              className="h-12 px-5 rounded-[4px] border border-[var(--line)] text-[var(--ink)] text-[14px] transition-colors hover:border-[var(--ink)]/40"
-              style={{ fontFamily: "var(--font-body)" }}
+              className="cta-ghost"
               disabled={loading}
             >
               Back
@@ -113,14 +106,10 @@ export default function WizardShell({
             type="button"
             onClick={isLast ? onSubmit : onNext}
             disabled={isLast ? submitDisabled || loading : nextDisabled || loading}
-            className="flex-1 h-12 rounded-[4px] bg-[var(--ink)] text-white text-[14px] font-medium disabled:opacity-40 transition-opacity"
-            style={{ fontFamily: "var(--font-body)" }}
+            className="cta flex-1"
           >
-            {loading
-              ? "Loading…"
-              : isLast
-              ? submitLabel
-              : nextLabel}
+            {loading ? "Plotting…" : isLast ? submitLabel : nextLabel}
+            {!loading && <span className="arrow" aria-hidden="true">→</span>}
           </button>
         </div>
       </div>

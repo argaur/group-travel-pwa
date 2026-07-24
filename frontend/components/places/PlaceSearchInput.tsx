@@ -112,8 +112,8 @@ export default function PlaceSearchInput({
           onFocus={() => results.length > 0 && setOpen(true)}
           placeholder={placeholder}
           disabled={disabled}
-          className="w-full border border-[var(--line)] rounded-[4px] px-4 py-3 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors pr-10 disabled:opacity-50"
-          style={{ fontFamily: "var(--font-body)", color: "var(--ink)" }}
+          className="w-full rounded-none border-[1.5px] border-[var(--ink-15)] px-4 py-3 text-sm outline-none focus:border-[var(--accent)] transition-colors pr-10 disabled:opacity-50"
+          style={{ fontFamily: "var(--body)", color: "var(--ink)", background: "var(--paper)", minHeight: 44 }}
           autoComplete="off"
         />
         {loading && (
@@ -125,48 +125,58 @@ export default function PlaceSearchInput({
               viewBox="0 0 16 16"
               fill="none"
             >
-              <circle cx="8" cy="8" r="6" stroke="var(--line)" strokeWidth="2" />
-              <path d="M8 2a6 6 0 0 1 6 6" stroke="var(--accent-lilac)" strokeWidth="2" strokeLinecap="round" />
+              <circle cx="8" cy="8" r="6" stroke="var(--ink-15)" strokeWidth="2" />
+              <path d="M8 2a6 6 0 0 1 6 6" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" />
             </svg>
           </span>
         )}
       </div>
 
       {open && results.length > 0 && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[var(--line)] rounded-[4px] shadow-lg z-50 overflow-hidden">
+        <div
+          className="absolute left-0 right-0 top-full mt-1 z-50 overflow-hidden"
+          style={{ background: "var(--paper)", border: "2px solid var(--ink)" }}
+        >
           {results.map((place, i) => (
             <button
               key={place.place_id}
               type="button"
               onMouseDown={() => select(place)}
-              className={`w-full text-left px-4 py-3 transition-colors border-b border-[var(--line)] last:border-0 ${
-                i === focused ? "bg-[var(--accent-lilac)]/8" : "hover:bg-[var(--bg)]"
+              className={`w-full text-left px-4 py-3 transition-colors flex items-start gap-2.5 border-b border-dashed border-[var(--ink-15)] last:border-b-0 ${
+                i === focused ? "bg-[var(--paper-edge)]" : "hover:bg-[var(--paper-edge)]"
               }`}
             >
-              <p
-                className="text-[13px] font-medium text-[var(--ink)] truncate"
-                style={{ fontFamily: "var(--font-body)" }}
-              >
-                {place.name}
-              </p>
-              {place.formatted_address && (
-                <p
-                  className="text-[11px] text-[var(--muted)] truncate mt-0.5"
-                  style={{ fontFamily: "var(--font-body)" }}
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" className="mt-1 shrink-0">
+                <path d="M6 1a3.2 3.2 0 0 0-3.2 3.2c0 2.3 3.2 6 3.2 6s3.2-3.7 3.2-6A3.2 3.2 0 0 0 6 1z" stroke="var(--accent)" strokeWidth="1.2" />
+                <circle cx="6" cy="4.2" r="1.1" fill="var(--accent)" />
+              </svg>
+              <span className="min-w-0">
+                <span
+                  className="block text-[13px] font-medium text-[var(--ink)] truncate"
+                  style={{ fontFamily: "var(--body)" }}
                 >
-                  {place.formatted_address}
-                </p>
-              )}
+                  {place.name}
+                </span>
+                {place.formatted_address && (
+                  <span
+                    className="block text-[11px] text-[var(--ink-60)] truncate mt-0.5"
+                    style={{ fontFamily: "var(--body)" }}
+                  >
+                    {place.formatted_address}
+                  </span>
+                )}
+              </span>
             </button>
           ))}
         </div>
       )}
 
       {open && !loading && results.length === 0 && query.length >= 2 && (
-        <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[var(--line)] rounded-[4px] shadow-lg z-50 px-4 py-3">
-          <p className="text-[12px] text-[var(--muted)]" style={{ fontFamily: "var(--font-body)" }}>
-            No places found for &ldquo;{query}&rdquo;
-          </p>
+        <div
+          className="absolute left-0 right-0 top-full mt-1 z-50 px-4 py-3"
+          style={{ background: "var(--paper)", border: "2px solid var(--ink)" }}
+        >
+          <p className="m-label">Nothing charted for &ldquo;{query}&rdquo;</p>
         </div>
       )}
     </div>

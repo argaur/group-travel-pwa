@@ -81,13 +81,10 @@ export default function MembersPage() {
       subtitle={`${members.length} people · tap a filter to narrow down`}
     >
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <p
-            className="text-[13px] text-[var(--muted)]"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
-            Loading members…
-          </p>
+        <div className="max-w-md py-6">
+          <p className="m-label mb-3">Plotting the party…</p>
+          <div className="skeleton-hatch h-4 w-full mb-2" />
+          <div className="skeleton-hatch h-4 w-4/5" />
         </div>
       ) : (
         <div className="max-w-2xl">

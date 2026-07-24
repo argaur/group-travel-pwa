@@ -1,9 +1,16 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect, useRef, useCallback } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { Contours } from "@/components/Contours"
 
-/* ── Scroll reveal hook ──────────────────────────────────────────────────────── */
+/* ═══════════════════════════════════════════════════════════════════════════
+   TRIVO Landing — "The Cartography of a Trip"
+   Expedition-map marketing page. Every graphic carries data; decoration cut.
+   System classes live in app/globals.css; spec in DESIGN_CARTOGRAPHY.md.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Scroll reveal — .rv elements gain .in when they enter the viewport ────── */
 
 function useScrollReveal() {
   const observerRef = useRef<IntersectionObserver | null>(null)
@@ -15,12 +22,12 @@ function useScrollReveal() {
         (entries) => {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
-              entry.target.setAttribute("data-revealed", "true")
+              entry.target.classList.add("in")
               observerRef.current?.unobserve(entry.target)
             }
           })
         },
-        { threshold: 0.1, rootMargin: "0px 0px -32px 0px" }
+        { threshold: 0.12, rootMargin: "0px 0px -32px 0px" }
       )
     }
     observerRef.current.observe(node)
@@ -33,1464 +40,758 @@ function useScrollReveal() {
   return observe
 }
 
-/* ── Inline SVG icons ────────────────────────────────────────────────────────── */
+/* ── Compass-rose wordmark ─────────────────────────────────────────────────── */
 
-function TrivoMark({ size = 32 }: { size?: number }) {
+function TrivoMark({ size = 22 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="mark-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#ff8a6b" />
-          <stop offset="100%" stopColor="#ff6b9a" />
-        </linearGradient>
-      </defs>
-      <rect width="512" height="512" rx="96" fill="#0f1222" />
-      <rect x="128" y="168" width="256" height="28" rx="14" fill="url(#mark-g)" />
-      <rect x="242" y="168" width="28" height="152" rx="14" fill="url(#mark-g)" />
-      <circle cx="256" cy="348" r="34" fill="url(#mark-g)" />
-      <circle cx="256" cy="348" r="16" fill="#0f1222" />
-      <circle cx="128" cy="182" r="14" fill="url(#mark-g)" />
-      <circle cx="384" cy="182" r="14" fill="url(#mark-g)" />
+    <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden="true">
+      <circle cx="11" cy="11" r="9.6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M11 3.4 L13 11 L11 18.6 L9 11 Z" fill="var(--accent)" />
+      <circle cx="11" cy="11" r="1.5" fill="currentColor" />
     </svg>
   )
 }
 
-function IconSurvey() {
+/* ── Hero figure: compass + the plan drawing itself ────────────────────────────
+   The dashed vermillion route is the trip plan forming: the pulsing dot is
+   where this group is now (the idea), waypoints pop as decisions lock
+   (dates, stay), and X is the booked trip. */
+
+function HeroCompassRoute() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
-    </svg>
-  )
-}
+    <svg viewBox="0 0 460 470" role="img" aria-label="Survey chart: a dotted route drawing itself from 'you are here — the idea' through locked dates and a chosen stay to an X marked 'booked', beside a compass rose">
+      {/* Compass */}
+      <g className="compass-ring" opacity=".9">
+        <circle cx="230" cy="150" r="118" fill="none" stroke="var(--ink)" strokeWidth="1.4" />
+        <circle
+          cx="230"
+          cy="150"
+          r="98"
+          fill="none"
+          stroke="var(--ink)"
+          strokeWidth=".8"
+          strokeDasharray="2 5"
+          opacity=".6"
+        />
+        <g stroke="var(--ink)" strokeWidth="1.4">
+          <line x1="230" y1="30" x2="230" y2="46" />
+          <line x1="230" y1="254" x2="230" y2="270" />
+          <line x1="110" y1="150" x2="126" y2="150" />
+          <line x1="334" y1="150" x2="350" y2="150" />
+        </g>
+      </g>
+      <g fontFamily="var(--mono)" fontSize="13" fill="var(--ink)" textAnchor="middle" fontWeight="700">
+        <text x="230" y="22">N</text>
+        <text x="230" y="292">S</text>
+        <text x="95" y="155">W</text>
+        <text x="365" y="155">E</text>
+      </g>
+      {/* Needle (static — the party knows where it's pointing) */}
+      <g>
+        <path d="M230 62 L242 150 L230 238 L218 150 Z" fill="none" stroke="var(--ink)" strokeWidth="1.2" />
+        <path d="M230 62 L242 150 L230 150 Z" fill="var(--accent)" />
+        <path d="M230 62 L218 150 L230 150 Z" fill="var(--ink)" />
+        <circle cx="230" cy="150" r="5" fill="var(--paper)" stroke="var(--ink)" strokeWidth="2" />
+      </g>
 
-function IconSparkle() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z" /><path d="M5 17l.8 2.2L8 20l-2.2.8L5 23l-.8-2.2L2 20l2.2-.8L5 17z" />
-    </svg>
-  )
-}
-
-function IconVote() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="2" y="3" width="20" height="14" rx="2" /><path d="M8 21h8M12 17v4" /><path d="M7 8h10M7 11h6" />
-    </svg>
-  )
-}
-
-function IconCalendar() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /><circle cx="8" cy="15" r="1.5" fill="currentColor" stroke="none" /><circle cx="12" cy="15" r="1.5" fill="currentColor" stroke="none" /><circle cx="16" cy="15" r="1.5" fill="currentColor" stroke="none" />
-    </svg>
-  )
-}
-
-function IconTask() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M9 12l2 2 4-4" />
-    </svg>
-  )
-}
-
-function IconExpense() {
-  return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="9" /><path d="M12 7v10M9.5 9.5a2.5 2.5 0 015 0c0 1.4-.8 2-2.5 2.5-1.7.5-2.5 1.1-2.5 2.5a2.5 2.5 0 005 0" />
-    </svg>
-  )
-}
-
-/* ── Navbar ──────────────────────────────────────────────────────────────────── */
-
-function Navbar() {
-  return (
-    <nav
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 50,
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
-        background: "rgba(15,18,34,0.82)",
-        borderBottom: "1px solid rgba(255,255,255,0.06)",
-      }}
-    >
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          padding: "0 24px",
-          height: 64,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        {/* Logo */}
-        <Link
-          href="/"
-          style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}
-        >
-          <TrivoMark size={36} />
-          <span
-            style={{
-              fontFamily: "var(--font-display), Georgia, serif",
-              fontStyle: "italic",
-              fontWeight: 500,
-              fontSize: 22,
-              color: "#ffffff",
-              letterSpacing: "0.02em",
-            }}
-          >
-            Trivo
-          </span>
-        </Link>
-
-        {/* Nav links — desktop only */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 32,
-          }}
-          className="hidden-mobile"
-        >
-          {[
-            { label: "Features", href: "#features" },
-            { label: "How it works", href: "#how-it-works" },
-          ].map(({ label, href }) => (
-            <a
-              key={label}
-              href={href}
-              style={{
-                color: "rgba(255,255,255,0.5)",
-                fontSize: 14,
-                fontFamily: "var(--font-body), sans-serif",
-                textDecoration: "none",
-                transition: "color 150ms ease",
-                letterSpacing: "0.01em",
-              }}
-              onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "rgba(255,255,255,0.9)")}
-              onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "rgba(255,255,255,0.5)")}
-            >
-              {label}
-            </a>
-          ))}
-        </div>
-
-        {/* CTAs */}
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <Link
-            href="/auth/signin?callbackUrl=/dashboard"
-            style={{
-              color: "rgba(255,255,255,0.6)",
-              fontSize: 14,
-              fontFamily: "var(--font-body), sans-serif",
-              textDecoration: "none",
-            }}
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/auth/signin?callbackUrl=/trips/new"
-            style={{
-              background: "#ff8a6b",
-              color: "#0f1222",
-              fontSize: 14,
-              fontWeight: 600,
-              fontFamily: "var(--font-body), sans-serif",
-              padding: "9px 20px",
-              borderRadius: 6,
-              textDecoration: "none",
-              letterSpacing: "0.01em",
-              transition: "opacity 150ms ease",
-            }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.opacity = "0.88")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.opacity = "1")}
-          >
-            Start free
-          </Link>
-        </div>
-      </div>
-    </nav>
-  )
-}
-
-/* ── Hero ────────────────────────────────────────────────────────────────────── */
-
-function HeroSection() {
-  return (
-    <section
-      className="grain-overlay"
-      style={{
-        background: "#0f1222",
-        minHeight: "100svh",
-        display: "flex",
-        flexDirection: "column",
-        justifyContent: "center",
-        position: "relative",
-        overflow: "hidden",
-        padding: "80px 24px 80px",
-      }}
-    >
-      {/* Atmosphere orbs */}
-      <div
-        className="animate-pulse-glow"
-        style={{
-          position: "absolute",
-          top: -160,
-          left: -80,
-          width: 560,
-          height: 560,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(255,138,107,0.22) 0%, transparent 70%)",
-          filter: "blur(40px)",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        className="animate-pulse-glow"
-        style={{
-          position: "absolute",
-          bottom: -80,
-          right: -100,
-          width: 480,
-          height: 480,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(154,140,255,0.18) 0%, transparent 70%)",
-          filter: "blur(40px)",
-          pointerEvents: "none",
-          animationDelay: "2s",
-        }}
-      />
-      <div
-        style={{
-          position: "absolute",
-          top: "38%",
-          right: "18%",
-          width: 260,
-          height: 260,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(255,107,154,0.1) 0%, transparent 70%)",
-          filter: "blur(32px)",
-          pointerEvents: "none",
-        }}
+      {/* The plan, drawing itself */}
+      <path
+        className="route-path"
+        d="M64 430 C 120 400, 96 340, 156 322 C 226 300, 208 250, 274 240 C 330 232, 344 200, 352 168"
+        fill="none"
+        stroke="var(--accent)"
+        strokeWidth="2.4"
+        strokeLinecap="round"
       />
 
-      {/* Content */}
-      <div
-        style={{
-          maxWidth: 1200,
-          margin: "0 auto",
-          width: "100%",
-          position: "relative",
-          zIndex: 2,
-        }}
-      >
-        <div style={{ maxWidth: 720 }}>
-          {/* Eyebrow */}
-          <p
-            className="animate-fade-up"
-            style={{
-              fontFamily: "'Courier New', Courier, monospace",
-              fontSize: 11,
-              letterSpacing: "0.18em",
-              color: "rgba(255,255,255,0.28)",
-              marginBottom: 24,
-              textTransform: "uppercase",
-            }}
-          >
-            28°36&apos;N 77°13&apos;E — GROUP TRAVEL
-          </p>
+      {/* YOU ARE HERE — the idea */}
+      <g>
+        <circle className="you-dot" cx="64" cy="430" r="7" fill="var(--accent)" />
+        <circle cx="64" cy="430" r="13" fill="none" stroke="var(--accent)" strokeWidth="1.2" opacity=".5" />
+        <text x="86" y="428" fontFamily="var(--mono)" fontSize="11.5" letterSpacing="2.5" fill="var(--ink)" fontWeight="700">
+          YOU ARE HERE
+        </text>
+        <text x="86" y="444" fontFamily="var(--mono)" fontSize="9.5" letterSpacing="2" fill="var(--ink-60)">
+          THE IDEA
+        </text>
+      </g>
 
-          {/* Hero wordmark */}
-          <h1
-            className="gradient-text animate-fade-up"
-            style={{
-              fontFamily: "var(--font-display), Georgia, serif",
-              fontStyle: "italic",
-              fontWeight: 700,
-              fontSize: "clamp(72px, 14vw, 172px)",
-              lineHeight: 0.92,
-              letterSpacing: "0.05em",
-              marginBottom: 32,
-              animationDelay: "60ms",
-            }}
-          >
-            TRIVO
-          </h1>
+      {/* Waypoints lock in as the route reaches them */}
+      <g className="route-wp wp-d1">
+        <circle cx="156" cy="322" r="4.5" fill="var(--paper)" stroke="var(--accent)" strokeWidth="2" />
+        <text x="140" y="345" fontFamily="var(--mono)" fontSize="9.5" letterSpacing="2" fill="var(--ink-60)">
+          DATES LOCKED
+        </text>
+      </g>
+      <g className="route-wp wp-d2">
+        <circle cx="274" cy="240" r="4.5" fill="var(--paper)" stroke="var(--accent)" strokeWidth="2" />
+        <text x="256" y="263" fontFamily="var(--mono)" fontSize="9.5" letterSpacing="2" fill="var(--ink-60)">
+          STAY CHOSEN
+        </text>
+      </g>
 
-          {/* Subtitle */}
-          <p
-            className="animate-fade-up"
-            style={{
-              fontFamily: "var(--font-body), sans-serif",
-              fontSize: "clamp(18px, 2.2vw, 22px)",
-              color: "rgba(255,255,255,0.72)",
-              fontWeight: 400,
-              lineHeight: 1.5,
-              marginBottom: 8,
-              animationDelay: "120ms",
-            }}
-          >
-            Plan together. Travel better.
-          </p>
-          <p
-            className="animate-fade-up"
-            style={{
-              fontFamily: "var(--font-display), Georgia, serif",
-              fontStyle: "italic",
-              fontWeight: 300,
-              fontSize: "clamp(16px, 1.8vw, 20px)",
-              color: "rgba(255,255,255,0.38)",
-              marginBottom: 48,
-              animationDelay: "160ms",
-            }}
-          >
-            Group trips, done with calm.
-          </p>
-
-          {/* CTAs */}
-          <div
-            className="animate-fade-up"
-            style={{
-              display: "flex",
-              flexWrap: "wrap",
-              gap: 12,
-              marginBottom: 32,
-              animationDelay: "220ms",
-            }}
-          >
-            <Link
-              href="/auth/signin?callbackUrl=/trips/new"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 8,
-                background: "#ff8a6b",
-                color: "#0f1222",
-                fontFamily: "var(--font-body), sans-serif",
-                fontWeight: 600,
-                fontSize: 15,
-                padding: "14px 28px",
-                borderRadius: 8,
-                textDecoration: "none",
-                letterSpacing: "0.01em",
-                boxShadow: "0 0 40px rgba(255,138,107,0.35)",
-                transition: "opacity 150ms ease, box-shadow 150ms ease",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.opacity = "0.9"
-                ;(e.currentTarget as HTMLElement).style.boxShadow = "0 0 60px rgba(255,138,107,0.5)"
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.opacity = "1"
-                ;(e.currentTarget as HTMLElement).style.boxShadow = "0 0 40px rgba(255,138,107,0.35)"
-              }}
-            >
-              Start planning free
-              <span style={{ fontSize: 18 }}>→</span>
-            </Link>
-            <a
-              href="#how-it-works"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                fontFamily: "var(--font-body), sans-serif",
-                fontWeight: 400,
-                fontSize: 15,
-                color: "rgba(255,255,255,0.65)",
-                padding: "14px 28px",
-                borderRadius: 8,
-                border: "1px solid rgba(255,255,255,0.14)",
-                textDecoration: "none",
-                letterSpacing: "0.01em",
-                transition: "border-color 150ms ease, color 150ms ease",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.3)"
-                ;(e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.9)"
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = "rgba(255,255,255,0.14)"
-                ;(e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.65)"
-              }}
-            >
-              See how it works
-            </a>
-          </div>
-
-          {/* Social proof */}
-          <p
-            className="animate-fade-up"
-            style={{
-              fontFamily: "var(--font-body), sans-serif",
-              fontSize: 12,
-              color: "rgba(255,255,255,0.22)",
-              letterSpacing: "0.04em",
-              animationDelay: "280ms",
-            }}
-          >
-            Free to use · No credit card · Works on mobile
-          </p>
-        </div>
-
-        {/* Floating feature cards — visible on large screens only */}
-        <div className="hero-cards-container">
-          {/* Card 1: Anonymous survey */}
-          <div
-            className="animate-float"
-            style={{
-              position: "absolute",
-              top: -40,
-              right: 40,
-              width: 220,
-              background: "rgba(255,255,255,0.05)",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: 12,
-              padding: "14px 16px",
-              backdropFilter: "blur(12px)",
-              "--float-rotate": "2deg",
-            } as React.CSSProperties}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <div style={{
-                width: 8, height: 8, borderRadius: "50%", background: "#ff8a6b",
-                boxShadow: "0 0 8px rgba(255,138,107,0.6)",
-              }} />
-              <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 10, letterSpacing: "0.1em", fontFamily: "var(--font-body), sans-serif" }}>ANONYMOUS SURVEY</span>
-            </div>
-            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, fontFamily: "var(--font-body), sans-serif", marginBottom: 10 }}>
-              Budget range?
-            </p>
-            <div style={{ display: "flex", gap: 6 }}>
-              {["₹3k–5k", "₹5k–8k", "₹8k+"].map((b, i) => (
-                <span
-                  key={b}
-                  style={{
-                    fontSize: 10,
-                    padding: "3px 8px",
-                    borderRadius: 4,
-                    border: "1px solid rgba(255,255,255,0.12)",
-                    color: i === 1 ? "#ff8a6b" : "rgba(255,255,255,0.4)",
-                    background: i === 1 ? "rgba(255,138,107,0.12)" : "transparent",
-                    fontFamily: "var(--font-body), sans-serif",
-                  }}
-                >
-                  {b}
-                </span>
-              ))}
-            </div>
-            <p style={{ color: "rgba(255,255,255,0.2)", fontSize: 10, marginTop: 8, fontFamily: "var(--font-body), sans-serif" }}>
-              Anonymous · 6 responses
-            </p>
-          </div>
-
-          {/* Card 2: AI synthesis */}
-          <div
-            className="animate-float-slow"
-            style={{
-              position: "absolute",
-              bottom: -60,
-              right: 80,
-              width: 240,
-              background: "rgba(154,140,255,0.08)",
-              border: "1px solid rgba(154,140,255,0.2)",
-              borderRadius: 12,
-              padding: "14px 16px",
-              backdropFilter: "blur(12px)",
-              "--float-rotate": "-1.5deg",
-            } as React.CSSProperties}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <span style={{ fontSize: 14 }}>✦</span>
-              <span style={{ color: "rgba(154,140,255,0.8)", fontSize: 10, letterSpacing: "0.1em", fontFamily: "var(--font-body), sans-serif" }}>AI SYNTHESIS</span>
-            </div>
-            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 12, lineHeight: 1.5, fontFamily: "var(--font-body), sans-serif", marginBottom: 8 }}>
-              &ldquo;3 of 6 prefer the hills. Budget consensus at ₹5–7k.&rdquo;
-            </p>
-            <div style={{
-              background: "rgba(154,140,255,0.15)",
-              border: "1px solid rgba(154,140,255,0.2)",
-              borderRadius: 6,
-              padding: "6px 10px",
-              fontSize: 11,
-              color: "#9a8cff",
-              fontFamily: "var(--font-body), sans-serif",
-            }}>
-              ✦ 3 options generated
-            </div>
-          </div>
-
-          {/* Card 3: Voting */}
-          <div
-            className="animate-float"
-            style={{
-              position: "absolute",
-              top: 120,
-              right: -10,
-              width: 200,
-              background: "rgba(255,107,154,0.06)",
-              border: "1px solid rgba(255,107,154,0.18)",
-              borderRadius: 12,
-              padding: "14px 16px",
-              backdropFilter: "blur(12px)",
-              "--float-rotate": "1deg",
-              animationDelay: "1s",
-            } as React.CSSProperties}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#ff6b9a" }} />
-              <span style={{ color: "rgba(255,107,154,0.8)", fontSize: 10, letterSpacing: "0.1em", fontFamily: "var(--font-body), sans-serif" }}>GROUP VOTE</span>
-            </div>
-            <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, fontFamily: "var(--font-body), sans-serif", marginBottom: 8 }}>
-              Destination
-            </p>
-            {[
-              { label: "Kasol, HP", pct: 67 },
-              { label: "Coorg, KA", pct: 33 },
-            ].map(({ label, pct }) => (
-              <div key={label} style={{ marginBottom: 6 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.5)", fontFamily: "var(--font-body), sans-serif" }}>{label}</span>
-                  <span style={{ fontSize: 11, color: "rgba(255,107,154,0.7)", fontFamily: "var(--font-body), sans-serif" }}>{pct}%</span>
-                </div>
-                <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.08)" }}>
-                  <div style={{ width: `${pct}%`, height: "100%", background: "#ff6b9a", borderRadius: 2 }} />
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Scroll indicator */}
-      <div
-        style={{
-          position: "absolute",
-          bottom: 32,
-          left: "50%",
-          transform: "translateX(-50%)",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 6,
-          zIndex: 2,
-        }}
-      >
-        <span style={{ fontSize: 10, letterSpacing: "0.14em", color: "rgba(255,255,255,0.2)", fontFamily: "var(--font-body), sans-serif" }}>SCROLL</span>
-        <div style={{ width: 1, height: 32, background: "linear-gradient(to bottom, rgba(255,255,255,0.2), transparent)" }} />
-      </div>
-    </section>
-  )
-}
-
-/* ── Problem section ─────────────────────────────────────────────────────────── */
-
-function ProblemSection({ reveal }: { reveal: (node: HTMLElement | null) => void }) {
-  const problems = [
-    {
-      num: "01",
-      title: "Silent budget misalignment",
-      body: "Nobody says ₹5k feels like a lot. So the expensive option gets picked, and three people quietly drop out. The trip dies before it starts.",
-      accent: "#ff8a6b",
-      delay: "reveal-delay-1",
-    },
-    {
-      num: "02",
-      title: "Organizer burnout",
-      body: "One person makes 47 decisions via WhatsApp, chases 8 people for confirmations, and tracks expenses in a spreadsheet. Then they stop enjoying the trip.",
-      accent: "#ff6b9a",
-      delay: "reveal-delay-2",
-    },
-    {
-      num: "03",
-      title: "No single source of truth",
-      body: "The plan lives in a chat. The budget lives in Sheets. The poll closed on Instagram. When details conflict, nobody knows which version is real.",
-      accent: "#9a8cff",
-      delay: "reveal-delay-3",
-    },
-  ]
-
-  return (
-    <section
-      id="problems"
-      style={{
-        background: "var(--bg)",
-        padding: "100px 24px",
-      }}
-    >
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        {/* Header */}
-        <div ref={reveal} className="reveal" style={{ marginBottom: 64 }}>
-          <p style={{
-            fontFamily: "'Courier New', Courier, monospace",
-            fontSize: 11,
-            letterSpacing: "0.18em",
-            color: "var(--muted)",
-            marginBottom: 16,
-            textTransform: "uppercase",
-          }}>
-            The problem
-          </p>
-          <h2 style={{
-            fontFamily: "var(--font-display), Georgia, serif",
-            fontStyle: "italic",
-            fontWeight: 300,
-            fontSize: "clamp(36px, 5vw, 56px)",
-            color: "var(--ink)",
-            lineHeight: 1.1,
-            maxWidth: 600,
-          }}>
-            Three things kill every group trip.
-          </h2>
-        </div>
-
-        {/* Cards */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: 24,
-          }}
+      {/* X marks the booked trip */}
+      <g className="dest-x">
+        <g stroke="var(--accent)" strokeWidth="3.4" strokeLinecap="round">
+          <line x1="343" y1="159" x2="361" y2="177" />
+          <line x1="361" y1="159" x2="343" y2="177" />
+        </g>
+        <text
+          x="352"
+          y="145"
+          fontFamily="var(--mono)"
+          fontSize="11.5"
+          letterSpacing="2.5"
+          fill="var(--ink)"
+          textAnchor="middle"
+          fontWeight="700"
         >
-          {problems.map(({ num, title, body, accent, delay }) => (
-            <div
-              key={num}
-              ref={reveal}
-              className={`reveal ${delay}`}
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--line)",
-                borderLeft: `3px solid ${accent}`,
-                borderRadius: 4,
-                padding: "32px 28px",
-                position: "relative",
-                overflow: "hidden",
-              }}
-            >
-              {/* Ghost number */}
-              <span style={{
-                position: "absolute",
-                top: 12,
-                right: 20,
-                fontFamily: "var(--font-display), Georgia, serif",
-                fontStyle: "italic",
-                fontWeight: 700,
-                fontSize: 80,
-                color: `${accent}12`,
-                lineHeight: 1,
-                pointerEvents: "none",
-                userSelect: "none",
-              }}>
-                {num}
-              </span>
-              <h3 style={{
-                fontFamily: "var(--font-body), sans-serif",
-                fontWeight: 600,
-                fontSize: 16,
-                color: "var(--ink)",
-                marginBottom: 12,
-                lineHeight: 1.3,
-              }}>
-                {title}
-              </h3>
-              <p style={{
-                fontFamily: "var(--font-body), sans-serif",
-                fontSize: 14,
-                color: "var(--muted)",
-                lineHeight: 1.7,
-              }}>
-                {body}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+          BOOKED
+        </text>
+      </g>
+    </svg>
   )
 }
 
-/* ── How It Works ────────────────────────────────────────────────────────────── */
+/* ── Ticker — destinations with real coordinates ───────────────────────────── */
 
-function HowItWorksSection({ reveal }: { reveal: (node: HTMLElement | null) => void }) {
-  const steps = [
-    {
-      num: "1",
-      title: "Create & invite",
-      body: "Set up your trip in 2 minutes. Share a link via WhatsApp — anyone with it can join instantly, no app install needed.",
-      highlight: false,
-    },
-    {
-      num: "2",
-      title: "Everyone answers",
-      body: "Each member fills a quick preference survey — budget range, trip style, dates. It's completely anonymous. No peer pressure.",
-      highlight: false,
-    },
-    {
-      num: "3",
-      title: "AI synthesises, group votes",
-      body: "Claude reads all preferences and generates specific vote options. Group votes, tasks get assigned, everyone stays aligned.",
-      highlight: true,
-    },
-  ]
+const TICKER_STOPS = [
+  "KASOL 32.01° N",
+  "GOKARNA 14.55° N",
+  "SPITI 32.25° N",
+  "MUNNAR 10.09° N",
+  "JAISALMER 26.92° N",
+  "TAWANG 27.59° N",
+  "VARKALA 8.73° N",
+  "COORG 12.42° N",
+  "MEGHALAYA 25.47° N",
+  "ANDAMANS 11.74° N",
+  "CHOPTA 30.33° N",
+  "HAMPI 15.34° N",
+]
 
+function TickerContent() {
   return (
-    <section
-      id="how-it-works"
-      className="grain-overlay"
-      style={{
-        background: "#0f1222",
-        padding: "100px 24px",
-        position: "relative",
-      }}
-    >
-      <div style={{ maxWidth: 1200, margin: "0 auto", position: "relative", zIndex: 2 }}>
-        {/* Header */}
-        <div ref={reveal} className="reveal" style={{ marginBottom: 72 }}>
-          <p style={{
-            fontFamily: "'Courier New', Courier, monospace",
-            fontSize: 11,
-            letterSpacing: "0.18em",
-            color: "rgba(255,255,255,0.28)",
-            marginBottom: 16,
-            textTransform: "uppercase",
-          }}>
-            How it works
-          </p>
-          <h2 style={{
-            fontFamily: "var(--font-display), Georgia, serif",
-            fontStyle: "italic",
-            fontWeight: 300,
-            fontSize: "clamp(36px, 5vw, 56px)",
-            color: "#ffffff",
-            lineHeight: 1.1,
-          }}>
-            From &ldquo;let&apos;s go&rdquo; to packed bags.
-          </h2>
-        </div>
-
-        {/* Steps */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-            gap: 0,
-            position: "relative",
-          }}
-        >
-          {steps.map(({ num, title, body, highlight }, i) => (
-            <div
-              key={num}
-              ref={reveal}
-              className={`reveal reveal-delay-${i + 1}`}
-              style={{
-                padding: "40px 36px",
-                borderLeft: i > 0 ? "1px solid rgba(255,255,255,0.06)" : "none",
-                position: "relative",
-              }}
-            >
-              {/* Connecting dot on top border */}
-              {i < steps.length - 1 && (
-                <div style={{
-                  position: "absolute",
-                  top: 56,
-                  right: -1,
-                  width: 10,
-                  height: 10,
-                  borderRadius: "50%",
-                  background: "rgba(255,138,107,0.4)",
-                  zIndex: 1,
-                  transform: "translateX(50%)",
-                }} />
-              )}
-
-              {/* Step number */}
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: "50%",
-                border: highlight ? "2px solid #ff8a6b" : "1px solid rgba(255,255,255,0.15)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 24,
-                background: highlight ? "rgba(255,138,107,0.1)" : "transparent",
-              }}>
-                <span style={{
-                  fontFamily: "var(--font-display), Georgia, serif",
-                  fontStyle: "italic",
-                  fontSize: 20,
-                  fontWeight: 500,
-                  color: highlight ? "#ff8a6b" : "rgba(255,255,255,0.5)",
-                }}>
-                  {num}
-                </span>
-              </div>
-
-              <h3 style={{
-                fontFamily: "var(--font-body), sans-serif",
-                fontWeight: 600,
-                fontSize: 17,
-                color: "#ffffff",
-                marginBottom: 12,
-              }}>
-                {title}
-              </h3>
-              <p style={{
-                fontFamily: "var(--font-body), sans-serif",
-                fontSize: 14,
-                color: "rgba(255,255,255,0.48)",
-                lineHeight: 1.7,
-              }}>
-                {body}
-              </p>
-
-              {/* Step tag */}
-              <p style={{
-                marginTop: 20,
-                fontFamily: "'Courier New', Courier, monospace",
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                color: "rgba(255,255,255,0.16)",
-              }}>
-                STEP 0{num}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        {/* Bottom CTA */}
-        <div ref={reveal} className="reveal reveal-delay-4" style={{ marginTop: 72, textAlign: "center" }}>
-          <Link
-            href="/auth/signin?callbackUrl=/trips/new"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: "rgba(255,255,255,0.06)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              color: "rgba(255,255,255,0.75)",
-              fontFamily: "var(--font-body), sans-serif",
-              fontSize: 14,
-              fontWeight: 500,
-              padding: "12px 28px",
-              borderRadius: 8,
-              textDecoration: "none",
-              transition: "background 150ms ease, color 150ms ease",
-              letterSpacing: "0.01em",
-            }}
-            onMouseEnter={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.1)"
-              ;(e.currentTarget as HTMLElement).style.color = "#ffffff"
-            }}
-            onMouseLeave={(e) => {
-              (e.currentTarget as HTMLElement).style.background = "rgba(255,255,255,0.06)"
-              ;(e.currentTarget as HTMLElement).style.color = "rgba(255,255,255,0.75)"
-            }}
-          >
-            Try it yourself →
-          </Link>
-        </div>
-      </div>
-    </section>
+    <span>
+      {TICKER_STOPS.map((stop) => (
+        <span key={stop} className="tick-item" data-label={`${stop} ◆`} />
+      ))}
+    </span>
   )
 }
 
-/* ── Features Grid ───────────────────────────────────────────────────────────── */
+/* ── Field-kit plate figures — each mini chart carries real product data ───── */
 
-function FeaturesSection({ reveal }: { reveal: (node: HTMLElement | null) => void }) {
-  const features = [
-    {
-      icon: <IconSurvey />,
-      title: "Anonymous preference survey",
-      body: "Budget, trip style, dates — collected without peer pressure. Everyone answers honestly when it's private.",
-      accent: "#ff8a6b",
-    },
-    {
-      icon: <IconSparkle />,
-      title: "AI synthesis by Claude",
-      body: "Claude reads 8 different opinions and distils them into 3 clear, actionable options. No more endless deliberation.",
-      accent: "#9a8cff",
-    },
-    {
-      icon: <IconVote />,
-      title: "Group voting",
-      body: "Anonymous ranked votes on destinations, dates, accommodation. Decisions happen without anyone feeling forced.",
-      accent: "#ff6b9a",
-    },
-    {
-      icon: <IconCalendar />,
-      title: "RSVP + availability",
-      body: "See who's going, who's maybe, and find the exact dates that work for the most people in the group.",
-      accent: "#ff8a6b",
-    },
-    {
-      icon: <IconTask />,
-      title: "Task board",
-      body: "Visas, hotels, bookings — assign to individuals, set deadlines, get push reminders. Coordination without Notion.",
-      accent: "#9a8cff",
-    },
-    {
-      icon: <IconExpense />,
-      title: "Expense settlement",
-      body: "Log shared costs, split them fairly, and get an optimised settlement plan. No more 'you owe me' threads.",
-      accent: "#ff6b9a",
-    },
-  ]
-
+function FigSurvey() {
+  // Anonymous budget bands: 2 / 3 / 1 of six responses
   return (
-    <section
-      id="features"
-      style={{ background: "var(--bg)", padding: "100px 24px" }}
-    >
-      <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-        {/* Header */}
-        <div ref={reveal} className="reveal" style={{ marginBottom: 56 }}>
-          <p style={{
-            fontFamily: "'Courier New', Courier, monospace",
-            fontSize: 11,
-            letterSpacing: "0.18em",
-            color: "var(--muted)",
-            marginBottom: 16,
-            textTransform: "uppercase",
-          }}>
-            Features
-          </p>
-          <h2 style={{
-            fontFamily: "var(--font-display), Georgia, serif",
-            fontStyle: "italic",
-            fontWeight: 300,
-            fontSize: "clamp(36px, 5vw, 56px)",
-            color: "var(--ink)",
-            lineHeight: 1.1,
-          }}>
-            Everything the group needs.
-          </h2>
-        </div>
-
-        {/* Feature cards */}
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
-          gap: 16,
-        }}>
-          {features.map(({ icon, title, body, accent }, i) => (
-            <div
-              key={title}
-              ref={reveal}
-              className={`reveal reveal-delay-${(i % 3) + 1}`}
-              style={{
-                background: "var(--surface)",
-                border: "1px solid var(--line)",
-                borderRadius: 8,
-                padding: "24px 24px",
-                transition: "transform 200ms ease, box-shadow 200ms ease",
-                cursor: "default",
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"
-                ;(e.currentTarget as HTMLElement).style.boxShadow = "0 8px 24px rgba(15,18,34,0.08)"
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLElement).style.transform = "translateY(0)"
-                ;(e.currentTarget as HTMLElement).style.boxShadow = "none"
-              }}
-            >
-              {/* Icon */}
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: 10,
-                background: `${accent}14`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 16,
-                color: accent,
-              }}>
-                {icon}
-              </div>
-              <h3 style={{
-                fontFamily: "var(--font-body), sans-serif",
-                fontWeight: 600,
-                fontSize: 15,
-                color: "var(--ink)",
-                marginBottom: 8,
-                lineHeight: 1.3,
-              }}>
-                {title}
-              </h3>
-              <p style={{
-                fontFamily: "var(--font-body), sans-serif",
-                fontSize: 13,
-                color: "var(--muted)",
-                lineHeight: 1.7,
-              }}>
-                {body}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+    <svg width="96" height="80" viewBox="0 0 96 80" aria-hidden="true">
+      <g fontFamily="var(--mono)" fontSize="7.5" fill="var(--ink-60)" letterSpacing="1">
+        <text x="8" y="76">₹3–5K</text>
+        <text x="40" y="76">₹5–8K</text>
+        <text x="74" y="76">₹8K+</text>
+      </g>
+      <g>
+        <rect x="10" y="40" width="16" height="26" fill="none" stroke="var(--ink)" strokeWidth="1.4" />
+        <rect x="42" y="24" width="16" height="42" fill="var(--accent)" opacity=".85" />
+        <rect x="74" y="52" width="16" height="14" fill="none" stroke="var(--ink)" strokeWidth="1.4" />
+      </g>
+      <g fontFamily="var(--mono)" fontSize="8.5" fill="var(--ink)" fontWeight="700" textAnchor="middle">
+        <text x="18" y="35">2</text>
+        <text x="50" y="19">3</text>
+        <text x="82" y="47">1</text>
+      </g>
+    </svg>
   )
 }
 
-/* ── AI Difference ───────────────────────────────────────────────────────────── */
-
-function AIDifferenceSection({ reveal }: { reveal: (node: HTMLElement | null) => void }) {
+function FigSurfacer() {
+  // Contours agree on the left, pull apart on the right — the silent conflict
   return (
-    <section style={{
-      background: "var(--bg)",
-      padding: "80px 24px",
-      borderTop: "1px solid var(--line)",
-      borderBottom: "1px solid var(--line)",
-      position: "relative",
-      overflow: "hidden",
-    }}>
-      {/* Background accent */}
-      <div style={{
-        position: "absolute",
-        inset: 0,
-        background: "linear-gradient(135deg, rgba(255,138,107,0.05) 0%, rgba(154,140,255,0.05) 100%)",
-        pointerEvents: "none",
-      }} />
-
-      <div style={{
-        maxWidth: 1200,
-        margin: "0 auto",
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-        gap: 64,
-        alignItems: "center",
-        position: "relative",
-        zIndex: 1,
-      }}>
-        {/* Text */}
-        <div ref={reveal} className="reveal">
-          <p style={{
-            fontFamily: "'Courier New', Courier, monospace",
-            fontSize: 11,
-            letterSpacing: "0.18em",
-            color: "var(--muted)",
-            marginBottom: 16,
-            textTransform: "uppercase",
-          }}>
-            Powered by Claude
-          </p>
-          <h2 style={{
-            fontFamily: "var(--font-display), Georgia, serif",
-            fontStyle: "italic",
-            fontWeight: 300,
-            fontSize: "clamp(32px, 4vw, 48px)",
-            color: "var(--ink)",
-            lineHeight: 1.15,
-            marginBottom: 24,
-          }}>
-            The AI that actually understands group dynamics.
-          </h2>
-          <p style={{
-            fontFamily: "var(--font-body), sans-serif",
-            fontSize: 15,
-            color: "var(--muted)",
-            lineHeight: 1.7,
-            marginBottom: 16,
-          }}>
-            When 8 people have 8 different opinions, Trivo doesn&apos;t average them — it reads between the lines. Claude finds the options everyone can live with, not just the most popular one.
-          </p>
-          <p style={{
-            fontFamily: "var(--font-body), sans-serif",
-            fontSize: 15,
-            color: "var(--muted)",
-            lineHeight: 1.7,
-            marginBottom: 32,
-          }}>
-            From preference synthesis to vote option generation, the AI works in the background — so the group focuses on excitement, not logistics.
-          </p>
-          <Link
-            href="/auth/signin?callbackUrl=/trips/new"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: "var(--ink)",
-              color: "#ffffff",
-              fontFamily: "var(--font-body), sans-serif",
-              fontSize: 14,
-              fontWeight: 500,
-              padding: "12px 24px",
-              borderRadius: 8,
-              textDecoration: "none",
-              letterSpacing: "0.01em",
-            }}
-          >
-            Try it free →
-          </Link>
-        </div>
-
-        {/* AI summary card mockup */}
-        <div ref={reveal} className="reveal reveal-delay-2">
-          <div style={{
-            background: "var(--ink)",
-            borderRadius: 12,
-            padding: "28px",
-            boxShadow: "0 0 80px rgba(154,140,255,0.15), 0 24px 48px rgba(15,18,34,0.2)",
-          }}>
-            {/* Card header */}
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 8,
-                background: "rgba(154,140,255,0.2)",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 16,
-              }}>✦</div>
-              <div>
-                <p style={{ color: "#ffffff", fontSize: 14, fontWeight: 600, fontFamily: "var(--font-body), sans-serif" }}>AI Summary</p>
-                <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, fontFamily: "var(--font-body), sans-serif" }}>6 preferences analysed</p>
-              </div>
-              <div style={{ marginLeft: "auto" }}>
-                <span style={{
-                  fontSize: 10, padding: "3px 8px", borderRadius: 4,
-                  background: "rgba(154,140,255,0.15)", color: "#9a8cff",
-                  fontFamily: "var(--font-body), sans-serif", letterSpacing: "0.06em",
-                }}>CLAUDE</span>
-              </div>
-            </div>
-
-            {/* Anonymous preference bars */}
-            <div style={{ marginBottom: 20 }}>
-              {[
-                { label: "Budget", value: "₹4k–7k consensus", fill: 0.72, color: "#ff8a6b" },
-                { label: "Trip style", value: "Mountains preferred", fill: 0.58, color: "#9a8cff" },
-                { label: "Duration", value: "4–5 days", fill: 0.85, color: "#ff6b9a" },
-              ].map(({ label, value, fill, color }) => (
-                <div key={label} style={{ marginBottom: 12 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", fontFamily: "var(--font-body), sans-serif" }}>{label}</span>
-                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", fontFamily: "var(--font-body), sans-serif" }}>{value}</span>
-                  </div>
-                  <div style={{ height: 4, borderRadius: 2, background: "rgba(255,255,255,0.06)" }}>
-                    <div style={{ width: `${fill * 100}%`, height: "100%", borderRadius: 2, background: color }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Divider */}
-            <div style={{ height: 1, background: "rgba(255,255,255,0.06)", margin: "20px 0" }} />
-
-            {/* Generated options */}
-            <p style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, letterSpacing: "0.1em", marginBottom: 12, fontFamily: "var(--font-body), sans-serif" }}>GENERATED OPTIONS</p>
-            {[
-              { dest: "Kasol, Himachal Pradesh", badge: "Best fit" },
-              { dest: "Chopta, Uttarakhand", badge: "Budget pick" },
-              { dest: "Munnar, Kerala", badge: "Alternate" },
-            ].map(({ dest, badge }, i) => (
-              <div
-                key={dest}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "10px 12px",
-                  borderRadius: 6,
-                  marginBottom: 6,
-                  background: i === 0 ? "rgba(255,138,107,0.08)" : "rgba(255,255,255,0.03)",
-                  border: `1px solid ${i === 0 ? "rgba(255,138,107,0.2)" : "rgba(255,255,255,0.05)"}`,
-                }}
-              >
-                <span style={{ fontSize: 13, color: i === 0 ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.45)", fontFamily: "var(--font-body), sans-serif" }}>{dest}</span>
-                <span style={{
-                  fontSize: 10, padding: "2px 7px", borderRadius: 3,
-                  background: i === 0 ? "rgba(255,138,107,0.2)" : "rgba(255,255,255,0.05)",
-                  color: i === 0 ? "#ff8a6b" : "rgba(255,255,255,0.3)",
-                  fontFamily: "var(--font-body), sans-serif",
-                }}>{badge}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </section>
+    <svg width="100" height="76" viewBox="0 0 100 76" aria-hidden="true">
+      <g fill="none" strokeWidth="1.3">
+        <path d="M4 38 C 30 36, 55 20, 96 10" stroke="var(--ink)" opacity=".7" />
+        <path d="M4 40 C 30 39, 55 32, 96 28" stroke="var(--ink)" opacity=".45" />
+        <path d="M4 42 C 30 43, 55 50, 96 48" stroke="var(--ink)" opacity=".45" />
+        <path d="M4 44 C 30 46, 55 62, 96 66" stroke="var(--accent)" strokeDasharray="4 3" />
+      </g>
+      <circle cx="8" cy="41" r="3" fill="var(--accent)" />
+      <text x="60" y="42" fontFamily="var(--mono)" fontSize="7.5" fill="var(--accent)" letterSpacing="1.5" fontWeight="700">
+        GAP
+      </text>
+    </svg>
   )
 }
 
-/* ── Footer CTA ──────────────────────────────────────────────────────────────── */
-
-function FooterCTASection({ reveal }: { reveal: (node: HTMLElement | null) => void }) {
+function FigVote() {
+  // Ranked vote tally: 67 / 33
   return (
-    <section
-      className="grain-overlay"
-      style={{
-        background: "#0f1222",
-        padding: "120px 24px",
-        textAlign: "center",
-        position: "relative",
-        overflow: "hidden",
-      }}
-    >
-      {/* Atmosphere */}
-      <div style={{
-        position: "absolute",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: 600,
-        height: 400,
-        borderRadius: "50%",
-        background: "radial-gradient(ellipse, rgba(255,138,107,0.12) 0%, transparent 70%)",
-        filter: "blur(40px)",
-        pointerEvents: "none",
-      }} />
-
-      <div ref={reveal} className="reveal" style={{ position: "relative", zIndex: 2 }}>
-        <p style={{
-          fontFamily: "'Courier New', Courier, monospace",
-          fontSize: 11,
-          letterSpacing: "0.18em",
-          color: "rgba(255,255,255,0.22)",
-          marginBottom: 24,
-          textTransform: "uppercase",
-        }}>
-          Start for free
-        </p>
-        <h2 style={{
-          fontFamily: "var(--font-display), Georgia, serif",
-          fontStyle: "italic",
-          fontWeight: 300,
-          fontSize: "clamp(40px, 6vw, 72px)",
-          color: "#ffffff",
-          lineHeight: 1.1,
-          marginBottom: 48,
-          maxWidth: 720,
-          margin: "0 auto 48px",
-        }}>
-          Your next group trip starts here.
-        </h2>
-
-        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
-          <Link
-            href="/auth/signin?callbackUrl=/trips/new"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              background: "#ff8a6b",
-              color: "#0f1222",
-              fontFamily: "var(--font-body), sans-serif",
-              fontWeight: 600,
-              fontSize: 16,
-              padding: "16px 36px",
-              borderRadius: 8,
-              textDecoration: "none",
-              letterSpacing: "0.01em",
-              boxShadow: "0 0 60px rgba(255,138,107,0.4)",
-              transition: "opacity 150ms ease",
-            }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.opacity = "0.88")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.opacity = "1")}
-          >
-            Plan your first trip →
-          </Link>
-          <Link
-            href="/auth/signin?callbackUrl=/dashboard"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              fontFamily: "var(--font-body), sans-serif",
-              fontWeight: 400,
-              fontSize: 16,
-              color: "rgba(255,255,255,0.55)",
-              padding: "16px 28px",
-              borderRadius: 8,
-              border: "1px solid rgba(255,255,255,0.12)",
-              textDecoration: "none",
-            }}
-          >
-            Sign in
-          </Link>
-        </div>
-
-        <p style={{
-          fontFamily: "var(--font-body), sans-serif",
-          fontSize: 13,
-          color: "rgba(255,255,255,0.2)",
-          letterSpacing: "0.02em",
-        }}>
-          Continue with Google · Free forever · No credit card
-        </p>
-      </div>
-    </section>
+    <svg width="96" height="72" viewBox="0 0 96 72" aria-hidden="true">
+      <g fontFamily="var(--mono)" fontSize="7.5" fill="var(--ink-60)" letterSpacing="1">
+        <text x="6" y="18">KASOL</text>
+        <text x="6" y="48">COORG</text>
+      </g>
+      <rect x="6" y="24" width="60" height="8" fill="var(--accent)" opacity=".85" />
+      <rect x="6" y="54" width="30" height="8" fill="none" stroke="var(--ink)" strokeWidth="1.3" />
+      <g fontFamily="var(--mono)" fontSize="8.5" fill="var(--ink)" fontWeight="700">
+        <text x="72" y="31">67%</text>
+        <text x="42" y="61">33%</text>
+      </g>
+    </svg>
   )
 }
 
-/* ── Footer ──────────────────────────────────────────────────────────────────── */
-
-function Footer() {
+function FigDates() {
+  // Availability matrix — the overlap window boxed in vermillion
   return (
-    <footer style={{
-      background: "#0f1222",
-      borderTop: "1px solid rgba(255,255,255,0.05)",
-      padding: "48px 24px 32px",
-    }}>
-      <div style={{
-        maxWidth: 1200,
-        margin: "0 auto",
-        display: "flex",
-        flexWrap: "wrap",
-        justifyContent: "space-between",
-        gap: 40,
-        marginBottom: 40,
-      }}>
-        {/* Brand */}
-        <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-            <TrivoMark size={28} />
-            <span style={{
-              fontFamily: "var(--font-display), Georgia, serif",
-              fontStyle: "italic",
-              fontWeight: 500,
-              fontSize: 18,
-              color: "rgba(255,255,255,0.55)",
-            }}>Trivo</span>
-          </div>
-          <p style={{
-            fontSize: 13,
-            color: "rgba(255,255,255,0.22)",
-            fontFamily: "var(--font-body), sans-serif",
-            lineHeight: 1.6,
-            maxWidth: 240,
-          }}>
-            Group trips, done with calm.
-          </p>
-        </div>
-
-        {/* Links */}
-        <div style={{ display: "flex", gap: 64, flexWrap: "wrap" }}>
-          <div>
-            <p style={{
-              fontSize: 11,
-              letterSpacing: "0.12em",
-              color: "rgba(255,255,255,0.22)",
-              marginBottom: 16,
-              fontFamily: "var(--font-body), sans-serif",
-              textTransform: "uppercase",
-            }}>Product</p>
-            {["Features", "How it works"].map((label) => (
-              <div key={label} style={{ marginBottom: 10 }}>
-                <a
-                  href={`#${label.toLowerCase().replace(/ /g, "-")}`}
-                  style={{
-                    fontSize: 13,
-                    color: "rgba(255,255,255,0.35)",
-                    textDecoration: "none",
-                    fontFamily: "var(--font-body), sans-serif",
-                    transition: "color 150ms ease",
-                  }}
-                  onMouseEnter={(e) => ((e.target as HTMLElement).style.color = "rgba(255,255,255,0.7)")}
-                  onMouseLeave={(e) => ((e.target as HTMLElement).style.color = "rgba(255,255,255,0.35)")}
-                >
-                  {label}
-                </a>
-              </div>
-            ))}
-          </div>
-          <div>
-            <p style={{
-              fontSize: 11,
-              letterSpacing: "0.12em",
-              color: "rgba(255,255,255,0.22)",
-              marginBottom: 16,
-              fontFamily: "var(--font-body), sans-serif",
-              textTransform: "uppercase",
-            }}>Legal</p>
-            {["Privacy", "Terms"].map((label) => (
-              <div key={label} style={{ marginBottom: 10 }}>
-                <a
-                  href="#"
-                  style={{
-                    fontSize: 13,
-                    color: "rgba(255,255,255,0.35)",
-                    textDecoration: "none",
-                    fontFamily: "var(--font-body), sans-serif",
-                  }}
-                >
-                  {label}
-                </a>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Bottom bar */}
-      <div style={{
-        borderTop: "1px solid rgba(255,255,255,0.05)",
-        paddingTop: 24,
-        display: "flex",
-        justifyContent: "space-between",
-        flexWrap: "wrap",
-        gap: 12,
-      }}>
-        <p style={{
-          fontSize: 12,
-          color: "rgba(255,255,255,0.18)",
-          fontFamily: "var(--font-body), sans-serif",
-        }}>
-          © 2026 Trivo · Built for friend groups everywhere
-        </p>
-        <p style={{
-          fontSize: 12,
-          color: "rgba(255,255,255,0.12)",
-          fontFamily: "'Courier New', Courier, monospace",
-          letterSpacing: "0.08em",
-        }}>
-          28°36&apos;N 77°13&apos;E
-        </p>
-      </div>
-    </footer>
+    <svg width="96" height="76" viewBox="0 0 96 76" aria-hidden="true">
+      <g fill="var(--ink)">
+        {[0, 1, 2, 3, 4, 5, 6].map((c) =>
+          [0, 1, 2, 3].map((r) => (
+            <circle
+              key={`${c}-${r}`}
+              cx={12 + c * 12}
+              cy={14 + r * 14}
+              r="2.6"
+              opacity={c >= 3 && c <= 5 ? 0.9 : 0.22}
+            />
+          ))
+        )}
+      </g>
+      <rect x="42" y="4" width="36" height="60" fill="none" stroke="var(--accent)" strokeWidth="1.6" strokeDasharray="4 3" />
+      <text x="12" y="74" fontFamily="var(--mono)" fontSize="7.5" fill="var(--ink-60)" letterSpacing="1.5">
+        OVERLAP: 3 DAYS
+      </text>
+    </svg>
   )
 }
 
-/* ── Main component ──────────────────────────────────────────────────────────── */
+function FigTasks() {
+  // Manifest: two struck through, one live with an owner
+  return (
+    <svg width="96" height="72" viewBox="0 0 96 72" aria-hidden="true">
+      <g fontFamily="var(--mono)" fontSize="8" letterSpacing="1">
+        <g fill="var(--ink-40)">
+          <text x="20" y="16" textDecoration="line-through">BOOK STAY</text>
+          <text x="20" y="38" textDecoration="line-through">TRAIN TKTS</text>
+        </g>
+        <text x="20" y="60" fill="var(--ink)" fontWeight="700">FIRST AID — RIA</text>
+      </g>
+      <g stroke="var(--accent)" strokeWidth="1.8" fill="none">
+        <path d="M6 12 l3 4 l6 -7" />
+        <path d="M6 34 l3 4 l6 -7" />
+        <rect x="6" y="52" width="9" height="9" stroke="var(--ink)" />
+      </g>
+    </svg>
+  )
+}
+
+function FigLedger() {
+  // Settlement: sums resolve to zero
+  return (
+    <svg width="96" height="76" viewBox="0 0 96 76" aria-hidden="true">
+      <g fontFamily="var(--mono)" fontSize="8" letterSpacing="1" fill="var(--ink-60)">
+        <text x="8" y="14">ARJUN</text>
+        <text x="8" y="32">MEERA</text>
+        <text x="8" y="50">DEV</text>
+      </g>
+      <g fontFamily="var(--mono)" fontSize="8" letterSpacing="1" textAnchor="end">
+        <text x="88" y="14" fill="var(--ink)">+4,200</text>
+        <text x="88" y="32" fill="var(--ink)">−2,600</text>
+        <text x="88" y="50" fill="var(--ink)">−1,600</text>
+      </g>
+      <line x1="8" y1="58" x2="88" y2="58" stroke="var(--ink)" strokeWidth="1.4" />
+      <text x="88" y="72" fontFamily="var(--mono)" fontSize="8.5" fill="var(--accent)" fontWeight="700" letterSpacing="1.5" textAnchor="end">
+        SETTLED · 0
+      </text>
+    </svg>
+  )
+}
+
+const KIT_PLATES = [
+  {
+    no: "Plate I",
+    tick: "◆",
+    fig: <FigSurvey />,
+    title: "The quiet ballot",
+    tag: "Anonymous survey",
+    body: "Budget, dates, diets, trip style — collected privately. The honest numbers surface because no one is watching anyone answer.",
+    footLabel: "Reads as",
+    foot: "Budget bands · 6 responses",
+  },
+  {
+    no: "Plate II",
+    tick: "◆",
+    fig: <FigSurfacer />,
+    title: "The surfacer",
+    tag: "AI synthesis — Claude",
+    body: "Claude reads every private answer and maps where the group's terrain pulls apart — before the expensive mistake gets booked.",
+    footLabel: "Flags",
+    foot: "Budget gap · style split",
+  },
+  {
+    no: "Plate III",
+    tick: "◆",
+    fig: <FigVote />,
+    title: "The show of hands",
+    tag: "Group voting",
+    body: "Destination, dates, stay — put to an anonymous vote with options the AI drafted from real preferences. Decisions that stick.",
+    footLabel: "Decides",
+    foot: "Destination · dates · stay",
+  },
+  {
+    no: "Plate IV",
+    tick: "◆",
+    fig: <FigDates />,
+    title: "The muster roll",
+    tag: "RSVP + availability",
+    body: "Who's in, who's a maybe, and the exact window when the most of the party can actually travel — found, not argued.",
+    footLabel: "Finds",
+    foot: "The overlap window",
+  },
+  {
+    no: "Plate V",
+    tick: "◆",
+    fig: <FigTasks />,
+    title: "The manifest",
+    tag: "Task board",
+    body: "Bookings, tickets, permits — assigned to named owners with deadlines and push reminders. The organizer stops carrying it alone.",
+    footLabel: "Tracks",
+    foot: "Owners · deadlines · nudges",
+  },
+  {
+    no: "Plate VI",
+    tick: "◆",
+    fig: <FigLedger />,
+    title: "The settlement",
+    tag: "Expense ledger",
+    body: "Shared costs logged as they happen, split fairly, and resolved to the minimum set of transfers. The ledger closes at zero.",
+    footLabel: "Closes at",
+    foot: "Settled · no IOUs",
+  },
+]
+
+/* ── The Surfacer diagram — terrain pulling apart between two waypoints ────── */
+
+function SurfacerDiagram() {
+  return (
+    <svg viewBox="0 0 560 320" role="img" aria-label="Diagram: contour lines run together where the group agrees, then fan apart across a hatched gap between a 3,000-rupee-a-day preference and a 9,000-rupee-a-day preference">
+      {/* Agreement — lines travel together */}
+      <g fill="none" strokeWidth="1.5">
+        <path d="M30 156 C 110 150, 170 118, 250 96 C 340 72, 420 52, 530 34" stroke="var(--ink)" opacity=".65" />
+        <path d="M30 160 C 110 156, 170 140, 250 132 C 340 122, 420 108, 530 96" stroke="var(--ink)" opacity=".4" />
+        <path d="M30 164 C 110 164, 170 164, 250 168 C 340 172, 420 178, 530 182" stroke="var(--ink)" opacity=".4" />
+        <path d="M30 168 C 110 172, 170 190, 250 204 C 340 220, 420 238, 530 252" stroke="var(--ink)" opacity=".65" />
+        <path
+          className="route-path"
+          d="M30 172 C 110 180, 170 214, 250 240 C 340 268, 420 284, 530 296"
+          stroke="var(--accent)"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+        />
+      </g>
+
+      {/* Hatched divergence zone */}
+      <g stroke="var(--accent)" strokeWidth="1" opacity=".35">
+        {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+          <line key={i} x1={344 + i * 22} y1={120} x2={324 + i * 22} y2={216} />
+        ))}
+      </g>
+
+      {/* Waypoints */}
+      <g>
+        <circle className="you-dot" cx="30" cy="164" r="6" fill="var(--accent)" />
+        <text x="22" y="192" fontFamily="var(--mono)" fontSize="10" letterSpacing="2" fill="var(--ink)" fontWeight="700">
+          WHERE YOU AGREE
+        </text>
+        <text x="22" y="206" fontFamily="var(--mono)" fontSize="8.5" letterSpacing="1.5" fill="var(--ink-60)">
+          MOUNTAINS · 5 DAYS · MARCH
+        </text>
+      </g>
+      <g>
+        <text x="530" y="22" fontFamily="var(--mono)" fontSize="10" letterSpacing="2" fill="var(--ink)" fontWeight="700" textAnchor="end">
+          ₹9K / DAY
+        </text>
+        <text x="530" y="316" fontFamily="var(--mono)" fontSize="10" letterSpacing="2" fill="var(--ink)" fontWeight="700" textAnchor="end">
+          ₹3K / DAY
+        </text>
+        <text x="452" y="172" fontFamily="var(--mono)" fontSize="10.5" letterSpacing="2.5" fill="var(--accent)" fontWeight="700" textAnchor="middle">
+          THE SILENT GAP
+        </text>
+      </g>
+    </svg>
+  )
+}
+
+/* ── Page ──────────────────────────────────────────────────────────────────── */
+
+const START_HREF = "/auth/signin?callbackUrl=/trips/new"
+const SIGNIN_HREF = "/auth/signin?callbackUrl=/dashboard"
 
 export default function LandingPage() {
   const reveal = useScrollReveal()
+  const [loaded, setLoaded] = useState(false)
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setLoaded(true))
+    return () => cancelAnimationFrame(id)
+  }, [])
+
+  const heroRv = (extra?: string) => `rv${loaded ? " in" : ""}${extra ? ` ${extra}` : ""}`
 
   return (
-    <>
-      <style>{`
-        @media (max-width: 1099px) {
-          .hero-cards-container { display: none !important; }
-        }
-        @media (min-width: 1100px) {
-          .hero-cards-container {
-            display: block;
-            position: absolute;
-            top: 0;
-            right: 0;
-            left: 0;
-            bottom: 0;
-          }
-        }
-        @media (max-width: 640px) {
-          .hidden-mobile { display: none !important; }
-        }
-      `}</style>
-      <div style={{ overflowX: "hidden" }}>
-        <Navbar />
-        <HeroSection />
-        <ProblemSection reveal={reveal} />
-        <HowItWorksSection reveal={reveal} />
-        <FeaturesSection reveal={reveal} />
-        <AIDifferenceSection reveal={reveal} />
-        <FooterCTASection reveal={reveal} />
-        <Footer />
+    <div data-loaded={loaded} style={{ width: "100%", overflowX: "hidden" }}>
+      {/* ── Header ── */}
+      <header className="cart-header">
+        <div className="hd-inner">
+          <Link className="wordmark" href="/" aria-label="Trivo home">
+            <TrivoMark />
+            Trivo
+          </Link>
+          <span className="cart-badge">Field guide to group travel</span>
+          <nav className="hd-nav" aria-label="Sections">
+            <a className="lnk" href="#ledger">
+              <span className="idx">01</span>Ledger
+            </a>
+            <a className="lnk" href="#kit">
+              <span className="idx">02</span>Field kit
+            </a>
+            <a className="lnk" href="#surfacer">
+              <span className="idx">03</span>Surfacer
+            </a>
+            <a className="lnk" href="#route">
+              <span className="idx">04</span>Route
+            </a>
+            <Link className="lnk" href={SIGNIN_HREF}>
+              Sign in
+            </Link>
+            <Link className="hd-cta" href={START_HREF}>
+              Begin a trip
+            </Link>
+          </nav>
+        </div>
+      </header>
+
+      {/* ── Hero ── */}
+      <section className="hero" id="top">
+        <Contours />
+        <div className="coords" aria-hidden="true">
+          26.9124° N &nbsp;·&nbsp; 75.7873° E &nbsp;·&nbsp; TRIP № 01 &nbsp;·&nbsp; PARTY OF 6 &nbsp;·&nbsp; SHEET 1 OF 1
+        </div>
+        <div className="cart-wrap">
+          <div className="hero-grid">
+            <div>
+              <div className={heroRv()}>
+                <span className="fig-tag">
+                  <b>FIG. 1</b> THE EXPEDITION, BEFORE THE GROUP CHAT
+                </span>
+              </div>
+              <h1 className={heroRv("d1")}>
+                Every great trip dies in the <span className="em">group chat.</span>{" "}
+                <span className="quiet">Yours won&apos;t.</span>
+              </h1>
+              <p className={`cart-sub ${heroRv("d2")}`}>
+                Trivo maps the whole expedition — <strong>anonymous budgets, one shared plan, and AI
+                that surfaces the conflicts nobody says out loud</strong> — so eight maybes become one
+                booked trip.
+              </p>
+              <div className={`cta-row ${heroRv("d3")}`}>
+                <Link className="cta" href={START_HREF}>
+                  Chart the trip — free <span className="arrow" aria-hidden="true">→</span>
+                </Link>
+                <div className="cta-note">
+                  <strong>Free</strong> · no credit card
+                  <br />
+                  WhatsApp invite · any phone
+                </div>
+              </div>
+            </div>
+            <figure className={`hero-fig ${heroRv("d3")}`}>
+              <HeroCompassRoute />
+            </figure>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Ticker ── */}
+      <div className="ticker" aria-hidden="true">
+        <div className="ticker-track">
+          <TickerContent />
+          <TickerContent />
+        </div>
       </div>
-    </>
+
+      {/* ── № 01 · The ledger ── */}
+      <section id="ledger">
+        <div className="cart-wrap">
+          <div ref={reveal} className="sec-head rv">
+            <span className="sec-no">№ 01</span>
+            <h2 className="sec-title">
+              A plan, <i>not a scroll-back.</i>
+            </h2>
+            <span className="sec-rule" />
+          </div>
+
+          <div ref={reveal} className="ledger rv d1">
+            <span className="stamp" aria-hidden="true">
+              Surveyed · No guesswork
+            </span>
+            <div className="ledger-col no">
+              <h3>Struck from the record</h3>
+              <ul>
+                <li>
+                  <span className="mk">✕</span>
+                  <span className="strike">&quot;So are we doing this or not?&quot; — asked for the 47th time</span>
+                </li>
+                <li>
+                  <span className="mk">✕</span>
+                  <span className="strike">The ₹18k villa three people can&apos;t afford but won&apos;t say so</span>
+                </li>
+                <li>
+                  <span className="mk">✕</span>
+                  <span className="strike">Poll #4, closed at midnight, results lost to the scroll</span>
+                </li>
+                <li>
+                  <span className="mk">✕</span>
+                  <span className="strike">One organizer making 47 decisions alone</span>
+                </li>
+                <li>
+                  <span className="mk">✕</span>
+                  <span className="strike">&quot;I&apos;ll pay you back after the trip&quot; — he won&apos;t</span>
+                </li>
+              </ul>
+            </div>
+            <div className="ledger-col yes">
+              <h3>Entered into the plan</h3>
+              <ul>
+                <li>
+                  <span className="mk">◆</span>
+                  <span>
+                    <b>Anonymous budget bands</b> — the honest numbers, collected without an audience
+                  </span>
+                </li>
+                <li>
+                  <span className="mk">◆</span>
+                  <span>
+                    <b>One survey</b> — dates, diets, and trip styles from every member of the party
+                  </span>
+                </li>
+                <li>
+                  <span className="mk">◆</span>
+                  <span>
+                    <b>AI synthesis</b> — three concrete options the whole group can actually live with
+                  </span>
+                </li>
+                <li>
+                  <span className="mk">◆</span>
+                  <span>
+                    <b>Votes on the record</b> — decisions that stick instead of reopening nightly
+                  </span>
+                </li>
+                <li>
+                  <span className="mk">◆</span>
+                  <span>
+                    <b>A settled ledger</b> — every rupee accounted for, no IOUs on the flight home
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── № 02 · The field kit ── */}
+      <section id="kit" className="plates-band">
+        <div className="cart-wrap">
+          <div ref={reveal} className="sec-head rv">
+            <span className="sec-no">№ 02</span>
+            <h2 className="sec-title">
+              The field kit — <i>six instruments.</i>
+            </h2>
+            <span className="sec-rule" />
+          </div>
+
+          <div ref={reveal} className="plates even-3 rv d1">
+            {KIT_PLATES.map((plate) => (
+              <article key={plate.no} className="plate">
+                <div className="plate-no">
+                  <span>{plate.no}</span>
+                  <span className="tick">{plate.tick}</span>
+                </div>
+                <div className="plate-fig">{plate.fig}</div>
+                <h4>
+                  <span>{plate.title}</span>
+                  <span className="plate-tag">{plate.tag}</span>
+                </h4>
+                <p>{plate.body}</p>
+                <div className="plate-foot">
+                  <b>{plate.footLabel}</b>
+                  <span>{plate.foot}</span>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div ref={reveal} className="plates-cap rv">
+            <span>
+              <b>◆</b>&nbsp; Every figure above is drawn from real trip data — nothing is illustration
+            </span>
+            <span>Six instruments · one shared sheet</span>
+          </div>
+        </div>
+      </section>
+
+      {/* ── № 03 · The Silent Conflict Surfacer ── */}
+      <section id="surfacer" style={{ position: "relative" }}>
+        <div className="coords" aria-hidden="true">
+          FIG. 2 &nbsp;·&nbsp; PREFERENCE TERRAIN &nbsp;·&nbsp; 6 RESPONSES &nbsp;·&nbsp; 1 GAP FLAGGED
+        </div>
+        <div className="cart-wrap">
+          <div ref={reveal} className="sec-head rv">
+            <span className="sec-no">№ 03</span>
+            <h2 className="sec-title">
+              The silent conflicts, <i>surfaced.</i>
+            </h2>
+            <span className="sec-rule" />
+          </div>
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+              gap: "clamp(28px, 4vw, 56px)",
+              alignItems: "center",
+              marginBottom: "clamp(56px, 8vw, 96px)",
+            }}
+          >
+            <div ref={reveal} className="rv">
+              <span className="fig-tag" style={{ marginBottom: 22 }}>
+                <b>FIG. 2</b> PREFERENCE TERRAIN, ONE TRIP
+              </span>
+              <p className="cart-sub" style={{ marginBottom: 18 }}>
+                Nobody says <strong>&quot;₹5k a day feels like a lot to me.&quot;</strong> They just go
+                quiet, and three weeks later they drop out. That silence is where group trips die.
+              </p>
+              <p className="cart-sub" style={{ marginBottom: 28 }}>
+                Trivo&apos;s surfacer reads every anonymous answer and draws the group as terrain: where
+                you agree, the contours run together — where budgets and styles diverge,{" "}
+                <strong>the lines pull apart and the gap gets flagged</strong> before anything expensive
+                gets booked. Powered by Claude.
+              </p>
+              <Link className="cta sm" href={START_HREF}>
+                See your group&apos;s terrain <span className="arrow" aria-hidden="true">→</span>
+              </Link>
+            </div>
+            <div ref={reveal} className="rv d2">
+              <div
+                style={{
+                  border: "2px solid var(--ink)",
+                  background: "var(--paper)",
+                  padding: "clamp(16px, 2.5vw, 28px)",
+                  boxShadow: "6px 6px 0 var(--ink-15), 0 24px 48px -16px rgba(29,37,49,.35)",
+                }}
+              >
+                <SurfacerDiagram />
+                <div
+                  className="m-label"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                    borderTop: "1px dashed var(--ink-15)",
+                    paddingTop: 12,
+                    marginTop: 12,
+                  }}
+                >
+                  <span>
+                    <b>FIG. 2</b> — WHERE THE PARTY DIVERGES
+                  </span>
+                  <span>DRAWN FROM 6 ANONYMOUS ANSWERS</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── № 04 · The route ── */}
+      <section id="route" style={{ borderTop: "1px solid var(--ink-15)" }}>
+        <div className="cart-wrap">
+          <div ref={reveal} className="sec-head rv">
+            <span className="sec-no">№ 04</span>
+            <h2 className="sec-title">
+              The route, <i>in three bearings.</i>
+            </h2>
+            <span className="sec-rule" />
+          </div>
+          <div className="legend">
+            <div ref={reveal} className="leg rv">
+              <span className="leg-no">i.</span>
+              <h4>Raise the party</h4>
+              <p>
+                Name the trip, share <strong>one WhatsApp link.</strong> Everyone joins in a tap — no
+                app store, no account gymnastics, works on every phone in the group.
+              </p>
+            </div>
+            <div ref={reveal} className="leg rv d1">
+              <span className="leg-no">ii.</span>
+              <h4>Take bearings</h4>
+              <p>
+                Each member answers <strong>one private survey.</strong> Claude synthesizes the answers,
+                the surfacer flags the gaps, and the group votes on options built from the evidence.
+              </p>
+            </div>
+            <div ref={reveal} className="leg rv d2">
+              <span className="leg-no">iii.</span>
+              <h4>Walk the route</h4>
+              <p>
+                Tasks get named owners, the itinerary fills day by day, expenses log as they happen —
+                and the ledger <strong>settles to zero</strong> before you&apos;re home.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Close ── */}
+      <section className="close-sec" id="start">
+        <div className="cart-wrap">
+          <div ref={reveal} className="rv">
+            <span
+              className="close-sub"
+              style={{ display: "block" }}
+            >
+              FIG. 3 — THE WHOLE PARTY, ONE SHEET
+            </span>
+          </div>
+          <h2 ref={reveal} className="close-h rv d1">
+            One map.
+            <br />
+            <i>The whole party on it.</i>
+          </h2>
+          <p ref={reveal} className="close-sub rv d2">
+            Free · Anonymous surveys · Settles to zero
+          </p>
+          <div ref={reveal} className="rv d3">
+            <Link className="cta light" href={START_HREF}>
+              Begin the expedition — free <span className="arrow" aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Footer ── */}
+      <footer className="cart-footer">
+        <div className="cart-wrap ft">
+          <span>
+            <strong>Trivo</strong> — surveyed by the whole party
+          </span>
+          <span>
+            Sheet 1 of 1 · 2026 · <span className="v">◆</span> 26.9124° N 75.7873° E
+          </span>
+        </div>
+      </footer>
+    </div>
   )
 }

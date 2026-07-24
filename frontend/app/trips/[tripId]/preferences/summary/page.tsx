@@ -70,25 +70,103 @@ type ConsensusResponse = {
   report?: ConsensusReport
 }
 
+/* Severity → left-rule weight/ink. One hot accent: only "high" runs vermillion. */
 const SEVERITY_STYLES: Record<string, string> = {
-  high: "border-l-[var(--accent-coral)] bg-[var(--accent-coral)]/[0.06]",
-  medium: "border-l-[var(--accent-pink)] bg-[var(--accent-pink)]/[0.06]",
-  low: "border-l-[var(--accent-lilac)] bg-[var(--accent-lilac)]/[0.06]",
+  high: "border-l-[3px] border-l-[var(--accent)]",
+  medium: "border-l-[3px] border-l-[var(--ink)]",
+  low: "border-l-[3px] border-l-[var(--ink-15)]",
+}
+
+/* ── The Surfacer as terrain — contours fanning apart by divergence.
+   Same idiom + divergence formula as the dashboard's SurfacerTerrain.
+   (Deferred: extract to a shared component once the reference file can be
+   edited — see DESIGN_CARTOGRAPHY.md rollout note 8.) ── */
+function TerrainMini({
+  budgetOverlap,
+  gapFlags,
+  respondedLabel,
+}: {
+  budgetOverlap: { min: number; max: number } | null
+  gapFlags: string[]
+  respondedLabel: string
+}) {
+  const divergence = budgetOverlap === null ? 1 : Math.min(1, gapFlags.length * 0.33)
+  const X0 = 36
+  const X1 = 596
+  const CY = 118
+  const contours = [-2, -1, 0, 1, 2].map((i) => {
+    const yL = CY + i * 6
+    const yR = CY + i * (10 + divergence * 34)
+    return { i, d: `M ${X0} ${yL} C 230 ${yL}, 400 ${yR}, ${X1} ${yR}` }
+  })
+
+  return (
+    <svg
+      viewBox="0 0 640 236"
+      role="img"
+      aria-label={
+        budgetOverlap
+          ? `Terrain chart: preferences diverge by ${gapFlags.length} flagged gap${gapFlags.length === 1 ? "" : "s"}; a navigable budget pass exists at ₹${budgetOverlap.min} to ₹${budgetOverlap.max} per day`
+          : "Terrain chart: the group's budget ranges do not overlap yet — the contour lines fan fully apart"
+      }
+      style={{ width: "100%", height: "auto", display: "block" }}
+    >
+      {contours.map(({ i, d }) =>
+        i === 0 ? (
+          <path key={i} className="route-path" d={d} fill="none" stroke="var(--accent)" strokeWidth="2.2" strokeLinecap="round" />
+        ) : (
+          <path key={i} d={d} fill="none" stroke="var(--ink)" strokeWidth="1.3" opacity={Math.abs(i) === 1 ? 0.4 : 0.65} />
+        )
+      )}
+
+      {divergence > 0.2 && (
+        <g stroke="var(--accent)" strokeWidth="1" opacity=".3">
+          {[0, 1, 2, 3, 4, 5].map((i) => (
+            <line key={i} x1={430 + i * 26} y1={CY - 46 - divergence * 20} x2={410 + i * 26} y2={CY + 46 + divergence * 20} />
+          ))}
+        </g>
+      )}
+
+      <g>
+        <circle className="you-dot" cx={X0} cy={CY} r="6" fill="var(--accent)" />
+        <circle cx={X0} cy={CY} r="11" fill="none" stroke="var(--accent)" strokeWidth="1" opacity=".5" />
+        <text x={X0 - 12} y={CY + 44} fontFamily="var(--mono)" fontSize="10" letterSpacing="2" fill="var(--ink)" fontWeight="700">
+          THE PARTY
+        </text>
+        <text x={X0 - 12} y={CY + 58} fontFamily="var(--mono)" fontSize="8.5" letterSpacing="1.5" fill="var(--ink-60)">
+          {respondedLabel}
+        </text>
+      </g>
+
+      <g>
+        <g stroke="var(--accent)" strokeWidth="3" strokeLinecap="round">
+          <line x1={X1 + 8} y1={CY - 8} x2={X1 + 24} y2={CY + 8} />
+          <line x1={X1 + 24} y1={CY - 8} x2={X1 + 8} y2={CY + 8} />
+        </g>
+        <text x={X1 + 16} y={CY - 18} fontFamily="var(--mono)" fontSize="10" letterSpacing="2" fill="var(--ink)" fontWeight="700" textAnchor="middle">
+          THE TRIP
+        </text>
+      </g>
+
+      <text x="316" y="216" fontFamily="var(--mono)" fontSize="10.5" letterSpacing="2.5" fill="var(--accent)" fontWeight="700" textAnchor="middle">
+        {budgetOverlap
+          ? `NAVIGABLE PASS — ₹${budgetOverlap.min}–₹${budgetOverlap.max} / DAY`
+          : "NO COMMON BUDGET YET — TERRAIN OPEN"}
+      </text>
+    </svg>
+  )
 }
 
 function BarRow({ label, count, max }: { label: string; count: number; max: number }) {
   const pct = max > 0 ? Math.round((count / max) * 100) : 0
   return (
-    <div className="space-y-1">
-      <div className="flex justify-between text-xs">
-        <span>{label}</span>
-        <span className="text-[var(--muted)]">{count}</span>
+    <div className="space-y-1.5">
+      <div className="flex justify-between items-baseline gap-3">
+        <span className="text-[14px]" style={{ fontFamily: "var(--body)", color: "var(--ink)" }}>{label}</span>
+        <span className="m-label shrink-0">{count}</span>
       </div>
-      <div className="h-2 rounded-full bg-black/5 overflow-hidden">
-        <div
-          className="h-full rounded-full bg-gradient-to-r from-[var(--accent-coral)] to-[var(--accent-pink)] transition-all"
-          style={{ width: `${pct}%` }}
-        />
+      <div className="h-2 overflow-hidden" style={{ background: "var(--ink-08)" }}>
+        <div className="h-full transition-all" style={{ width: `${pct}%`, background: "var(--accent)" }} />
       </div>
     </div>
   )
@@ -99,7 +177,7 @@ function distributionBars(title: string, dist: Record<string, number> | undefine
   const max = Math.max(...Object.values(dist))
   return (
     <div className="space-y-3">
-      <p className="text-[var(--muted)] text-sm">{title}</p>
+      <p className="m-label">{title}</p>
       <div className="space-y-3">
         {Object.entries(dist).map(([k, v]) => (
           <BarRow key={k} label={k} count={v} max={max} />
@@ -137,7 +215,16 @@ export default function PreferenceSummaryPage() {
   }
 
   if (!summary) {
-    return <div className="p-6">Loading...</div>
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "var(--paper)" }}>
+        <div className="w-full max-w-md">
+          <p className="m-label mb-3">Plotting the route…</p>
+          <div className="skeleton-hatch h-4 w-full mb-2" />
+          <div className="skeleton-hatch h-4 w-4/5 mb-2" />
+          <div className="skeleton-hatch h-4 w-2/3" />
+        </div>
+      </div>
+    )
   }
 
   const showDemo = summary.show_demo_hint && summary.responded < 2
@@ -147,54 +234,86 @@ export default function PreferenceSummaryPage() {
       tripId={params.tripId}
       active="preferences"
       title="Preference summary"
-      subtitle="Anonymous group alignment (no individual identities)"
+      subtitle="Anonymous group alignment · no individual identities"
     >
+      {/* ── FIG. 1 — the Surfacer as terrain ── */}
+      <div className="card p-5 md:p-6 animate-fade-up mb-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-4">
+          <span className="fig-tag">
+            <b>FIG. 1</b> THE TERRAIN BETWEEN YOU
+          </span>
+          <span className="m-label">Surfacer · Claude</span>
+        </div>
+        <TerrainMini
+          budgetOverlap={summary.budget_overlap}
+          gapFlags={summary.gap_flags}
+          respondedLabel={`${summary.responded}/${summary.total_members} BEARINGS IN`}
+        />
+        {summary.gap_flags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-4 pt-4" style={{ borderTop: "1px dashed var(--ink-15)" }}>
+            {summary.gap_flags.map((flag) => (
+              <span key={flag} className="chip hot">⚑ {flag}</span>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
-        <div className="card p-5 space-y-6 text-sm">
+        <div className="card p-5 md:p-6 space-y-6">
           <div>
-            <p className="text-[var(--muted)]">Responses</p>
-            <p className="text-lg font-semibold">
-              {summary.responded} of {summary.total_members} members
+            <p className="m-label mb-1">Responses</p>
+            <p className="text-2xl" style={{ fontFamily: "var(--serif)", fontWeight: 600 }}>
+              {summary.responded}
+              <span style={{ color: "var(--ink-40)" }}> / {summary.total_members}</span>
+              <span className="text-base" style={{ color: "var(--ink-60)" }}> aboard</span>
             </p>
           </div>
-          <div>
-            <p className="text-[var(--muted)]">Budget overlap (group)</p>
-            <p className="text-lg font-semibold">
+          <div style={{ borderTop: "1px dashed var(--ink-15)", paddingTop: 20 }}>
+            <p className="m-label mb-1">Budget overlap (group)</p>
+            <p className="text-xl" style={{ fontFamily: "var(--serif)", fontWeight: 600 }}>
               {summary.budget_overlap
                 ? `₹${summary.budget_overlap.min} – ₹${summary.budget_overlap.max} / day`
-                : "No overlap yet"}
+                : "No common budget yet"}
             </p>
           </div>
-          <div>
-            <p className="text-[var(--muted)]">Dietary tags (union)</p>
-            <p>{summary.dietary_union.join(", ") || "None provided"}</p>
+          <div style={{ borderTop: "1px dashed var(--ink-15)", paddingTop: 20 }}>
+            <p className="m-label mb-1">Dietary tags (union)</p>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {summary.dietary_union.length > 0
+                ? summary.dietary_union.map((d) => <span key={d} className="chip">{d}</span>)
+                : <span className="text-sm" style={{ color: "var(--ink-60)", fontFamily: "var(--body)" }}>None provided</span>}
+            </div>
           </div>
-          <div>
-            <p className="text-[var(--muted)]">Trip styles</p>
-            <p>
+          <div style={{ borderTop: "1px dashed var(--ink-15)", paddingTop: 20 }}>
+            <p className="m-label mb-1">Trip styles</p>
+            <p className="text-sm mt-1" style={{ fontFamily: "var(--body)", color: "var(--ink)" }}>
               {Object.entries(summary.style_distribution)
                 .map(([k, v]) => `${k}: ${v}`)
                 .join(" · ") || "No data yet"}
             </p>
           </div>
-          {summary.gap_flags.length > 0 && (
-            <div>
-              <p className="text-[var(--muted)]">Gap flags</p>
-              <p>{summary.gap_flags.join(", ")}</p>
+
+          {distributionBars("Budget bands (anonymous counts)", summary.budget_band_distribution) && (
+            <div style={{ borderTop: "1px dashed var(--ink-15)", paddingTop: 20 }}>
+              {distributionBars("Budget bands (anonymous counts)", summary.budget_band_distribution)}
             </div>
           )}
 
-          {distributionBars("Budget bands (anonymous counts)", summary.budget_band_distribution)}
+          {distributionBars("Dietary mentions (counts)", summary.dietary_distribution) && (
+            <div style={{ borderTop: "1px dashed var(--ink-15)", paddingTop: 20 }}>
+              {distributionBars("Dietary mentions (counts)", summary.dietary_distribution)}
+            </div>
+          )}
 
-          {distributionBars("Dietary mentions (counts)", summary.dietary_distribution)}
-
-          {distributionBars("Constraints (counts)", summary.constraint_distribution)}
+          {distributionBars("Constraints (counts)", summary.constraint_distribution) && (
+            <div style={{ borderTop: "1px dashed var(--ink-15)", paddingTop: 20 }}>
+              {distributionBars("Constraints (counts)", summary.constraint_distribution)}
+            </div>
+          )}
 
           {showDemo && (
-            <div className="border border-dashed border-black/15 rounded-2xl p-4 space-y-4 bg-black/[0.02]">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                Illustrative demo (low response)
-              </p>
+            <div className="p-4 space-y-4" style={{ border: "1px dashed var(--ink-15)", background: "var(--ink-08)" }}>
+              <p className="m-label">Illustrative demo (low response)</p>
               {distributionBars("Demo — budget bands", DEMO_BUCKETS.budget_band_distribution)}
               {distributionBars("Demo — dietary", DEMO_BUCKETS.dietary_distribution)}
               {distributionBars("Demo — constraints", DEMO_BUCKETS.constraint_distribution)}
@@ -202,10 +321,10 @@ export default function PreferenceSummaryPage() {
           )}
         </div>
 
-        <div className="card p-5 space-y-4">
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold">Silent Conflict Surfacer</h2>
-            <p className="text-sm text-[var(--muted)]">
+        <div className="card p-5 md:p-6 space-y-4">
+          <div className="space-y-2">
+            <span className="fig-tag"><b>FIG. 2</b> SILENT CONFLICT SURFACER</span>
+            <p className="text-sm" style={{ fontFamily: "var(--body)", color: "var(--ink-60)" }}>
               AI reads the anonymous aggregate and names the tensions nobody has
               said out loud yet — grounded in the deterministic gap flags, never
               an individual.
@@ -213,30 +332,22 @@ export default function PreferenceSummaryPage() {
           </div>
 
           {!consensus && (
-            <button
-              className="rounded-full bg-[var(--ink)] text-white px-4 py-2 text-sm disabled:opacity-50"
-              onClick={loadConsensus}
-              disabled={consensusLoading}
-            >
+            <button className="cta sm" onClick={loadConsensus} disabled={consensusLoading}>
               {consensusLoading ? "Surfacing…" : "Surface group consensus"}
+              {!consensusLoading && <span className="arrow" aria-hidden="true">→</span>}
             </button>
           )}
 
           {consensusError && (
-            <div className="space-y-2" role="alert">
-              <p className="text-sm text-red-600">{consensusError}</p>
-              <button
-                type="button"
-                onClick={loadConsensus}
-                className="text-sm underline text-[var(--muted)]"
-              >
-                Retry
-              </button>
+            <div className="alert-plate space-y-2" role="alert">
+              <p className="m-label" style={{ color: "var(--accent)", fontWeight: 700 }}>⚑ Signal lost</p>
+              <p className="text-sm" style={{ fontFamily: "var(--body)" }}>{consensusError}</p>
+              <button type="button" onClick={loadConsensus} className="cta-ghost">Retry</button>
             </div>
           )}
 
           {consensus?.status === "insufficient_responses" && (
-            <div className="border border-dashed border-black/15 rounded-2xl p-4 text-sm text-[var(--muted)]">
+            <div className="p-4 text-sm" style={{ border: "1px dashed var(--ink-15)", fontFamily: "var(--body)", color: "var(--ink-60)" }}>
               {consensus.message}
             </div>
           )}
@@ -244,108 +355,78 @@ export default function PreferenceSummaryPage() {
           {consensus?.status === "ok" && consensus.report && (
             <div className="space-y-5">
               <div className="flex flex-wrap items-center gap-2">
-                {consensus.source === "ai" && (
-                  <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-[var(--accent-lilac)]/20 text-[var(--ink)]">
-                    AI-generated
-                  </span>
-                )}
-                {consensus.source === "deterministic_fallback" && (
-                  <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-black/10 text-[var(--muted)]">
-                    Deterministic fallback
-                  </span>
-                )}
-                {consensus.cached && (
-                  <span className="text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 bg-black/5 text-[var(--muted)]">
-                    Cached
-                  </span>
-                )}
+                {consensus.source === "ai" && <span className="chip hot">AI-generated</span>}
+                {consensus.source === "deterministic_fallback" && <span className="chip">Deterministic fallback</span>}
+                {consensus.cached && <span className="chip">Cached</span>}
               </div>
 
               {consensus.message && (
-                <p className="text-xs text-[var(--muted)]">{consensus.message}</p>
+                <p className="m-label">{consensus.message}</p>
               )}
 
-              <p className="text-sm font-medium">{consensus.report.headline}</p>
+              <p className="text-lg" style={{ fontFamily: "var(--serif)", fontWeight: 600 }}>{consensus.report.headline}</p>
 
               {consensus.report.agreement.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                    The group agrees on
-                  </p>
-                  <ul className="space-y-1 text-sm list-disc list-inside">
+                  <p className="m-label">The group agrees on</p>
+                  <ul className="space-y-2">
                     {consensus.report.agreement.map((a, i) => (
-                      <li key={i}>{a}</li>
+                      <li key={i} className="flex gap-3 text-sm" style={{ fontFamily: "var(--body)" }}>
+                        <span style={{ color: "var(--accent)" }}>◆</span>
+                        <span>{a}</span>
+                      </li>
                     ))}
                   </ul>
                 </div>
               )}
 
-              <div className="space-y-2">
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                  Silent conflicts
-                </p>
+              <div className="space-y-3">
+                <p className="m-label">Silent conflicts</p>
                 {consensus.report.silent_conflicts.length === 0 && (
-                  <p className="text-sm text-[var(--muted)]">
+                  <p className="text-sm" style={{ fontFamily: "var(--body)", color: "var(--ink-60)" }}>
                     No unvoiced conflicts the numbers support — the group is aligned.
                   </p>
                 )}
                 {consensus.report.silent_conflicts.map((c, i) => (
                   <div
                     key={i}
-                    className={`border-l-2 rounded-r-xl p-3 space-y-1 ${
-                      SEVERITY_STYLES[c.severity] ?? SEVERITY_STYLES.low
-                    }`}
+                    className={`p-3 space-y-1 ${SEVERITY_STYLES[c.severity] ?? SEVERITY_STYLES.low}`}
+                    style={{ background: "var(--paper)" }}
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold">{c.topic}</span>
-                      <span className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
-                        {c.severity}
-                      </span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm" style={{ fontFamily: "var(--body)", fontWeight: 600 }}>{c.topic}</span>
+                      <span className="m-label shrink-0">{c.severity}</span>
                     </div>
-                    <p className="text-sm">{c.description}</p>
-                    <p className="text-xs text-[var(--muted)]">
-                      Who should talk: {c.who_should_talk}
-                    </p>
+                    <p className="text-sm" style={{ fontFamily: "var(--body)" }}>{c.description}</p>
+                    <p className="m-label" style={{ letterSpacing: "0.12em" }}>Who should talk: {c.who_should_talk}</p>
                   </div>
                 ))}
               </div>
 
               {consensus.report.directions.length > 0 && (
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">
-                    Directions worth putting to a vote
-                  </p>
+                <div className="space-y-3">
+                  <p className="m-label">Directions worth putting to a vote</p>
                   {consensus.report.directions.map((d, i) => (
-                    <div key={i} className="border border-black/5 rounded-2xl p-3 space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold">{d.title}</span>
-                        <span className="text-[10px] uppercase tracking-wide text-[var(--muted)]">
-                          {d.confidence} confidence
-                        </span>
+                    <div key={i} className="p-3 space-y-1" style={{ border: "1px solid var(--ink-15)", background: "var(--paper)" }}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm" style={{ fontFamily: "var(--body)", fontWeight: 600 }}>{d.title}</span>
+                        <span className="m-label shrink-0">{d.confidence} confidence</span>
                       </div>
-                      <p className="text-sm">{d.tradeoffs}</p>
-                      <p className="text-xs text-[var(--muted)]">Best for: {d.serves_subgroup}</p>
+                      <p className="text-sm" style={{ fontFamily: "var(--body)" }}>{d.tradeoffs}</p>
+                      <p className="m-label" style={{ letterSpacing: "0.12em" }}>Best for: {d.serves_subgroup}</p>
                     </div>
                   ))}
                 </div>
               )}
 
-              <button
-                type="button"
-                onClick={loadConsensus}
-                disabled={consensusLoading}
-                className="text-sm underline text-[var(--muted)] disabled:opacity-50"
-              >
+              <button type="button" onClick={loadConsensus} disabled={consensusLoading} className="cta-ghost">
                 {consensusLoading ? "Refreshing…" : "Refresh"}
               </button>
             </div>
           )}
 
-          <button
-            className="rounded-full border border-black/10 px-4 py-2 text-sm"
-            onClick={() => router.push(`/dashboard/${params.tripId}`)}
-          >
-            Back to dashboard
+          <button className="cta-ghost w-full" onClick={() => router.push(`/dashboard/${params.tripId}`)}>
+            ← Back to dashboard
           </button>
         </div>
       </div>

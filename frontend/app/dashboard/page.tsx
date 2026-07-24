@@ -6,6 +6,7 @@ import { useSession, signOut } from "next-auth/react"
 import { useEffect, useState } from "react"
 import { api } from "@/lib/api"
 import { ensureBackendToken } from "@/lib/backend-auth"
+import { Contours } from "@/components/Contours"
 
 type TripCard = {
   id: string
@@ -19,13 +20,15 @@ type TripCard = {
   place_photo_url?: string | null
 }
 
-const TYPE_ACCENT: Record<string, string> = {
-  leisure: "var(--accent-lilac)",
-  adventure: "var(--accent-coral)",
-  beach: "var(--accent-pink)",
-  mountain: "var(--accent-lilac)",
-  family: "var(--accent-coral)",
-  office: "var(--muted)",
+/* Compass-rose wordmark — the Trivo mark */
+function TrivoMark({ size = 20 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden="true" className="shrink-0">
+      <circle cx="11" cy="11" r="9.6" fill="none" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M11 3.4 L13 11 L11 18.6 L9 11 Z" fill="var(--accent)" />
+      <circle cx="11" cy="11" r="1.5" fill="currentColor" />
+    </svg>
+  )
 }
 
 function formatDateRange(start: string | null, end: string | null) {
@@ -65,10 +68,8 @@ export default function DashboardLandingPage() {
 
   if (status === "unauthenticated" || status === "loading") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-[13px] text-[var(--muted)]" style={{ fontFamily: "var(--font-body)" }}>
-          Loading…
-        </p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--paper)" }}>
+        <p className="m-label">Plotting the route…</p>
       </div>
     )
   }
@@ -76,115 +77,115 @@ export default function DashboardLandingPage() {
   const userName = session?.user?.name?.split(" ")[0] ?? "there"
 
   return (
-    <div className="min-h-screen bg-[var(--bg)]">
-      {/* Top bar */}
-      <header className="border-b border-[var(--line)] px-6 py-4 flex items-center justify-between">
-        <p
-          className="text-[20px] text-[var(--ink)]"
-          style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontWeight: 300 }}
+    <div className="min-h-screen relative overflow-hidden" style={{ background: "var(--paper)" }}>
+      <Contours fixed />
+
+      {/* Top bar — field-guide header */}
+      <header
+        className="px-6 py-4 flex items-center justify-between relative z-10"
+        style={{ borderBottom: "2px solid var(--ink)", background: "var(--paper)" }}
+      >
+        <Link
+          href="/"
+          className="flex items-center gap-3"
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: 15,
+            letterSpacing: "0.34em",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            color: "var(--ink)",
+          }}
         >
-          <span className="gradient-text">Trivo</span>
-        </p>
+          <TrivoMark />
+          Trivo
+        </Link>
         <button
           type="button"
-          className="text-[12px] text-[var(--muted)] hover:text-[var(--ink)] transition-colors"
-          style={{ fontFamily: "var(--font-body)" }}
+          className="transition-colors"
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: 10,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            color: "var(--ink-60)",
+          }}
           onClick={() => signOut({ callbackUrl: "/" })}
         >
           Sign out
         </button>
       </header>
 
-      <div className="max-w-3xl mx-auto px-6 py-12">
+      <div className="max-w-3xl mx-auto px-6 py-12 relative z-10">
         {/* Welcome header */}
         <div className="mb-10 flex items-end justify-between gap-4 flex-wrap">
           <div>
-            <p
-              className="text-[12px] uppercase tracking-widest text-[var(--muted)] mb-2"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              Welcome back
-            </p>
+            <span className="fig-tag" style={{ marginBottom: 14 }}>
+              <b>◆</b> Welcome back
+            </span>
             <h1
-              className="text-[42px] leading-tight text-[var(--ink)]"
-              style={{
-                fontFamily: "var(--font-display)",
-                fontStyle: "italic",
-                fontWeight: 300,
-              }}
+              className="text-[42px] leading-tight mt-3"
+              style={{ fontFamily: "var(--serif)", fontWeight: 600, color: "var(--ink)", letterSpacing: "-0.01em" }}
             >
-              {userName}.
+              {userName}<span style={{ color: "var(--accent)" }}>.</span>
             </h1>
           </div>
 
-          <Link
-            href="/trips/new"
-            className="inline-flex items-center gap-2 h-11 px-5 rounded-[4px] bg-[var(--ink)] text-white text-[13px] font-medium hover:opacity-90 transition-opacity shrink-0"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
-            <span className="text-[16px] leading-none">+</span>
-            Plan new trip
+          <Link href="/trips/new" className="cta sm shrink-0">
+            Plan new trip <span className="arrow" aria-hidden="true">→</span>
           </Link>
         </div>
 
         {/* Trip grid */}
         {trips === null ? (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             {[1, 2].map((i) => (
-              <div
-                key={i}
-                className="border border-[var(--line)] rounded-[4px] overflow-hidden animate-pulse"
-              >
-                <div className="h-32 bg-[var(--line)]" />
+              <div key={i} className="card flat overflow-hidden">
+                <div className="skeleton-hatch h-28 w-full" />
                 <div className="p-4 space-y-2">
-                  <div className="h-4 bg-[var(--line)] rounded w-3/4" />
-                  <div className="h-3 bg-[var(--line)] rounded w-1/2" />
+                  <div className="skeleton-hatch h-4 w-3/4" />
+                  <div className="skeleton-hatch h-3 w-1/2" />
                 </div>
               </div>
             ))}
           </div>
         ) : trips.length === 0 ? (
           <div
-            className="border border-dashed border-[var(--line)] rounded-[4px] px-8 py-16 text-center space-y-4"
+            className="px-8 py-16 text-center"
+            style={{ border: "2px dashed var(--ink-15)", background: "var(--paper)" }}
           >
             <p
-              className="text-[28px] text-[var(--ink)]"
-              style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontWeight: 300 }}
+              className="text-[28px]"
+              style={{ fontFamily: "var(--serif)", fontWeight: 600, color: "var(--ink)" }}
             >
-              No trips yet.
+              Nothing charted yet.
             </p>
-            <p
-              className="text-[14px] text-[var(--muted)]"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              Create your first trip and invite the group in minutes.
+            <p className="text-[14px] mt-3 mb-6" style={{ fontFamily: "var(--body)", color: "var(--ink-60)" }}>
+              Raise the party and chart your first expedition in minutes.
             </p>
-            <Link
-              href="/trips/new"
-              className="inline-block mt-2 h-10 px-6 rounded-[4px] bg-[var(--ink)] text-white text-[13px] font-medium"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
-              Plan a trip
+            <Link href="/trips/new" className="cta sm inline-flex">
+              Chart a trip <span className="arrow" aria-hidden="true">→</span>
             </Link>
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {trips.map((t) => {
-              const accent = TYPE_ACCENT[t.trip_type] ?? "var(--accent-lilac)"
+          <div className="grid gap-4 sm:grid-cols-2">
+            {trips.map((t, i) => {
               const dateRange = formatDateRange(t.start_date, t.end_date)
               return (
                 <Link
                   key={t.id}
                   href={`/dashboard/${t.id}`}
-                  className="block border border-[var(--line)] rounded-[4px] overflow-hidden hover:border-[var(--ink)]/30 transition-colors group"
+                  className="card card-interactive flat overflow-hidden block"
                 >
-                  {/* Photo / accent header */}
+                  {/* Photo / grid header — real surveyed ground */}
                   <div
                     className="h-28 relative overflow-hidden"
                     style={{
+                      borderBottom: "2px solid var(--ink)",
                       background: t.place_photo_url
                         ? undefined
-                        : `linear-gradient(135deg, ${accent}20 0%, ${accent}08 100%)`,
+                        : "linear-gradient(var(--ink-08) 1px, transparent 1px), linear-gradient(90deg, var(--ink-08) 1px, transparent 1px)",
+                      backgroundSize: t.place_photo_url ? undefined : "20px 20px",
                     }}
                   >
                     {t.place_photo_url && (
@@ -192,45 +193,54 @@ export default function DashboardLandingPage() {
                       <img
                         src={t.place_photo_url}
                         alt={t.place_name ?? t.destination ?? ""}
-                        className="w-full h-full object-cover opacity-70 group-hover:opacity-80 transition-opacity"
+                        className="w-full h-full object-cover"
+                        style={{ filter: "saturate(0.85)" }}
                       />
                     )}
-                    <div
-                      className="absolute top-3 left-3 w-1 h-5 rounded-full"
-                      style={{ background: accent }}
-                    />
-                    <div
-                      className="absolute top-3 right-3 text-[10px] px-2 py-0.5 rounded-full border"
+                    <span
+                      className="absolute top-3 left-3"
                       style={{
-                        fontFamily: "var(--font-body)",
-                        background: "rgba(246,242,237,0.85)",
-                        borderColor: "var(--line)",
-                        color: "var(--muted)",
-                        backdropFilter: "blur(4px)",
+                        fontFamily: "var(--mono)",
+                        fontSize: 10,
+                        letterSpacing: "0.22em",
+                        textTransform: "uppercase",
+                        color: t.place_photo_url ? "var(--paper)" : "var(--ink-40)",
+                        fontWeight: 700,
+                        textShadow: t.place_photo_url ? "0 1px 3px rgba(0,0,0,0.5)" : undefined,
                       }}
                     >
+                      Plate {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span
+                      className="chip absolute top-2.5 right-3"
+                      style={{ background: "var(--paper)" }}
+                    >
                       {t.status}
-                    </div>
+                    </span>
                   </div>
 
                   {/* Content */}
                   <div className="p-4 space-y-1.5">
                     <p
-                      className="text-[15px] font-medium text-[var(--ink)] leading-snug"
-                      style={{ fontFamily: "var(--font-body)" }}
+                      className="text-[18px] leading-snug"
+                      style={{ fontFamily: "var(--serif)", fontWeight: 600, color: "var(--ink)" }}
                     >
                       {t.name}
                     </p>
-                    <p
-                      className="text-[12px] text-[var(--muted)]"
-                      style={{ fontFamily: "var(--font-body)" }}
-                    >
+                    <p className="m-label" style={{ letterSpacing: "0.12em" }}>
                       {t.place_name ?? t.destination ?? "Destination TBD"}
                       {dateRange ? ` · ${dateRange}` : ""}
                     </p>
                     <p
-                      className="text-[11px] uppercase tracking-wider"
-                      style={{ fontFamily: "var(--font-body)", color: accent }}
+                      style={{
+                        fontFamily: "var(--mono)",
+                        fontSize: 10.5,
+                        letterSpacing: "0.22em",
+                        textTransform: "uppercase",
+                        color: "var(--accent)",
+                        fontWeight: 700,
+                        marginTop: 4,
+                      }}
                     >
                       {t.trip_type}
                     </p>

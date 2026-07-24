@@ -27,7 +27,7 @@ function StarRating({ rating, max = 5 }: { rating: number; max?: number }) {
         <svg key={i} width="12" height="12" viewBox="0 0 12 12" fill="none">
           <path
             d="M6 1l1.24 2.56L10 4.1l-2 1.94.47 2.74L6 7.5 3.53 8.78 4 6.04 2 4.1l2.76-.54L6 1z"
-            fill={i < filled ? "var(--accent-coral)" : "var(--line)"}
+            fill={i < filled ? "var(--accent)" : "var(--ink-15)"}
           />
         </svg>
       ))}
@@ -51,11 +51,11 @@ export default function PlaceCard({ placeId, onDismiss }: PlaceCardProps) {
 
   if (loading) {
     return (
-      <div className="bg-white border border-[var(--line)] rounded-[4px] overflow-hidden animate-pulse">
-        <div className="h-48 bg-[var(--line)]" />
+      <div className="card flat overflow-hidden">
+        <div className="skeleton-hatch h-48 w-full" />
         <div className="p-5 space-y-2">
-          <div className="h-4 bg-[var(--line)] rounded w-2/3" />
-          <div className="h-3 bg-[var(--line)] rounded w-1/2" />
+          <div className="skeleton-hatch h-4 w-2/3" />
+          <div className="skeleton-hatch h-3 w-1/2" />
         </div>
       </div>
     )
@@ -63,8 +63,8 @@ export default function PlaceCard({ placeId, onDismiss }: PlaceCardProps) {
 
   if (!detail) {
     return (
-      <div className="border border-[var(--line)] rounded-[4px] px-4 py-3 text-sm text-[var(--muted)]">
-        Could not load place details.
+      <div className="px-4 py-3" style={{ border: "1.5px solid var(--ink-15)" }}>
+        <p className="m-label">Could not load place details</p>
       </div>
     )
   }
@@ -73,29 +73,42 @@ export default function PlaceCard({ placeId, onDismiss }: PlaceCardProps) {
   const hasMultiplePhotos = detail.photos.length > 1
 
   return (
-    <div className="bg-white border border-[var(--line)] rounded-[4px] overflow-hidden relative">
+    <div className="card flat overflow-hidden relative">
       {/* Hero photo */}
-      <div className="relative h-48 overflow-hidden bg-gradient-to-br from-[var(--bg)] to-[var(--accent-coral)]/30">
+      <div
+        className="relative h-48 overflow-hidden"
+        style={{
+          borderBottom: "2px solid var(--ink)",
+          background: "linear-gradient(var(--ink-08) 1px, transparent 1px), linear-gradient(90deg, var(--ink-08) 1px, transparent 1px)",
+          backgroundSize: "20px 20px",
+        }}
+      >
         {heroPhoto && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={heroPhoto}
             alt={detail.name}
             className="w-full h-full object-cover"
+            style={{ filter: "saturate(0.85)" }}
           />
         )}
 
-        {/* Photo navigation */}
+        {/* Photo navigation — squared ticks */}
         {hasMultiplePhotos && (
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
             {detail.photos.slice(0, 4).map((_, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => setPhotoIndex(i)}
-                className={`w-1.5 h-1.5 rounded-full transition-all ${
-                  i === photoIndex ? "bg-white scale-125" : "bg-white/50"
-                }`}
+                aria-label={`Photo ${i + 1}`}
+                style={{
+                  width: i === photoIndex ? 14 : 7,
+                  height: 3,
+                  background: i === photoIndex ? "var(--accent)" : "var(--paper)",
+                  opacity: i === photoIndex ? 1 : 0.6,
+                  transition: "all 0.2s",
+                }}
               />
             ))}
           </div>
@@ -103,10 +116,7 @@ export default function PlaceCard({ placeId, onDismiss }: PlaceCardProps) {
 
         {/* Sample badge */}
         {detail.source === "sample" && (
-          <span
-            className="absolute top-2 left-2 text-[10px] px-2 py-0.5 bg-black/40 text-white rounded-full"
-            style={{ fontFamily: "var(--font-body)" }}
-          >
+          <span className="chip absolute top-2 left-2" style={{ background: "var(--paper)" }}>
             Sample data
           </span>
         )}
@@ -116,7 +126,9 @@ export default function PlaceCard({ placeId, onDismiss }: PlaceCardProps) {
           <button
             type="button"
             onClick={onDismiss}
-            className="absolute top-2 right-2 w-7 h-7 bg-black/40 text-white rounded-full flex items-center justify-center hover:bg-black/60 transition-colors text-sm"
+            aria-label="Dismiss"
+            className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center transition-colors"
+            style={{ background: "var(--ink)", color: "var(--paper)", fontFamily: "var(--mono)" }}
           >
             ×
           </button>
@@ -126,17 +138,11 @@ export default function PlaceCard({ placeId, onDismiss }: PlaceCardProps) {
       {/* Content */}
       <div className="p-5 space-y-3">
         <div>
-          <h3
-            className="text-[18px] leading-snug text-[var(--ink)]"
-            style={{ fontFamily: "var(--font-display)", fontWeight: 500 }}
-          >
+          <h3 className="text-[19px] leading-snug" style={{ fontFamily: "var(--serif)", fontWeight: 600, color: "var(--ink)" }}>
             {detail.name}
           </h3>
           {detail.formatted_address && (
-            <p
-              className="text-[12px] text-[var(--muted)] mt-0.5"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
+            <p className="text-[12px] mt-1" style={{ fontFamily: "var(--body)", color: "var(--ink-60)" }}>
               {detail.formatted_address}
             </p>
           )}
@@ -146,7 +152,7 @@ export default function PlaceCard({ placeId, onDismiss }: PlaceCardProps) {
         {detail.rating != null && (
           <div className="flex items-center gap-2">
             <StarRating rating={detail.rating} />
-            <span className="text-[12px] text-[var(--muted)]" style={{ fontFamily: "var(--font-body)" }}>
+            <span style={{ fontFamily: "var(--mono)", fontSize: 11, letterSpacing: "0.08em", color: "var(--ink-60)" }}>
               {detail.rating}
               {detail.user_ratings_total != null && ` · ${detail.user_ratings_total.toLocaleString()} reviews`}
             </span>
@@ -155,22 +161,19 @@ export default function PlaceCard({ placeId, onDismiss }: PlaceCardProps) {
 
         {/* Reviews */}
         {detail.reviews.length > 0 && (
-          <div className="space-y-2 border-t border-[var(--line)] pt-3">
+          <div className="space-y-2.5 pt-3" style={{ borderTop: "1px dashed var(--ink-15)" }}>
             {detail.reviews.slice(0, 3).map((r, i) => (
               <div key={i} className="space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <span
-                    className="text-[12px] font-medium text-[var(--ink)]"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  >
+                  <span className="text-[12px]" style={{ fontFamily: "var(--body)", fontWeight: 600, color: "var(--ink)" }}>
                     {r.author}
                   </span>
                   {r.rating != null && <StarRating rating={r.rating} />}
                 </div>
                 {r.text && (
                   <p
-                    className="text-[12px] text-[var(--muted)] line-clamp-3"
-                    style={{ fontFamily: "var(--font-display)", fontStyle: "italic", fontWeight: 300, lineHeight: 1.5 }}
+                    className="text-[13px] line-clamp-3"
+                    style={{ fontFamily: "var(--serif)", fontStyle: "italic", fontWeight: 400, lineHeight: 1.5, color: "var(--ink-60)" }}
                   >
                     &ldquo;{r.text}&rdquo;
                   </p>

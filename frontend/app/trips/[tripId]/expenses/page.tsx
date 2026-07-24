@@ -104,93 +104,112 @@ function ExpensesContent() {
       subtitle="Log shared spends and settle quickly"
     >
       <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr]">
-        <form onSubmit={addExpense} className="card p-5 space-y-3">
-          <h2 className="text-lg font-semibold">Add expense</h2>
-          <input
-            className="w-full border border-black/10 rounded-xl px-3 py-2"
-            placeholder="Amount (INR)"
-            value={amountRupees}
-            onChange={(e) => setAmountRupees(e.target.value)}
-            type="number"
-            min={0}
-            step="0.01"
-            required
-          />
-          <label className="block text-sm text-[var(--muted)]">Paid by</label>
-          <select
-            className="w-full border border-black/10 rounded-xl px-3 py-2"
-            value={paidBy}
-            onChange={(e) => setPaidBy(e.target.value)}
-            disabled={loading || members.length === 0}
-            required
-          >
-            {members.length === 0 && <option value="">No members</option>}
-            {members.map((m) => (
-              <option key={m.user.id} value={m.user.id}>
-                {m.user.name}
-                {m.user.id === getBackendUserId() ? " (you)" : ""}
-              </option>
-            ))}
-          </select>
-          <select
-            className="w-full border border-black/10 rounded-xl px-3 py-2"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-          >
-            <option value="food">Food</option>
-            <option value="stay">Stay</option>
-            <option value="transport">Transport</option>
-            <option value="activities">Activities</option>
-            <option value="other">Other</option>
-          </select>
-          <button
-            className="w-full rounded-full bg-[var(--ink)] text-white px-4 py-2 disabled:opacity-50"
-            disabled={submitting || loading || members.length === 0}
-          >
+        <form onSubmit={addExpense} className="card p-5 md:p-6 space-y-4">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-xl" style={{ fontFamily: "var(--serif)", fontWeight: 600 }}>Add expense</h2>
+            <span className="m-label">New entry</span>
+          </div>
+          <div>
+            <label className="field-label block mb-1.5">Amount (₹)</label>
+            <input
+              className="field-input"
+              placeholder="0.00"
+              value={amountRupees}
+              onChange={(e) => setAmountRupees(e.target.value)}
+              type="number"
+              min={0}
+              step="0.01"
+              required
+            />
+          </div>
+          <div>
+            <label className="field-label block mb-1.5">Paid by</label>
+            <select
+              className="field-select"
+              value={paidBy}
+              onChange={(e) => setPaidBy(e.target.value)}
+              disabled={loading || members.length === 0}
+              required
+            >
+              {members.length === 0 && <option value="">No members</option>}
+              {members.map((m) => (
+                <option key={m.user.id} value={m.user.id}>
+                  {m.user.name}
+                  {m.user.id === getBackendUserId() ? " (you)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="field-label block mb-1.5">Category</label>
+            <select className="field-select" value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="food">Food</option>
+              <option value="stay">Stay</option>
+              <option value="transport">Transport</option>
+              <option value="activities">Activities</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <button className="cta sm w-full" disabled={submitting || loading || members.length === 0}>
             {submitting ? "Adding…" : "Add expense"}
+            {!submitting && <span className="arrow" aria-hidden="true">→</span>}
           </button>
           {submitError && (
-            <p className="text-sm text-red-600" role="alert">
-              {submitError}
-            </p>
+            <div className="alert-plate" role="alert">
+              <p className="m-label" style={{ color: "var(--accent)", fontWeight: 700 }}>⚑ {submitError}</p>
+            </div>
           )}
-          <a
-            className="text-sm text-[var(--muted)] underline"
-            href={`/trips/${params.tripId}/expenses/settlement`}
-          >
-            View settlement
+          <a className="cta-ghost w-full" href={`/trips/${params.tripId}/expenses/settlement`}>
+            View settlement →
           </a>
         </form>
 
-        <div className="card p-5 space-y-3">
-          <h2 className="text-lg font-semibold">Recent expenses</h2>
+        <div className="card p-5 md:p-6">
+          <div className="flex items-baseline justify-between gap-3 mb-2">
+            <h2 className="text-xl" style={{ fontFamily: "var(--serif)", fontWeight: 600 }}>The ledger</h2>
+            <span className="m-label"><b>{expenses.length}</b> entries</span>
+          </div>
           {loading && (
-            <p className="text-sm text-[var(--muted)]">Loading expenses…</p>
-          )}
-          {!loading && error && (
-            <div className="space-y-2" role="alert">
-              <p className="text-sm text-red-600">{error}</p>
-              <button
-                type="button"
-                onClick={load}
-                className="text-sm underline text-[var(--muted)]"
-              >
-                Retry
-              </button>
+            <div className="py-2">
+              <div className="skeleton-hatch h-4 w-full mb-2" />
+              <div className="skeleton-hatch h-4 w-3/4" />
             </div>
           )}
-          {!loading && !error &&
-            expenses.map((expense) => (
-              <div key={expense.id} className="border border-black/5 rounded-2xl p-4">
-                <p className="font-medium">{expense.category}</p>
-                <p className="text-sm text-[var(--muted)]">
-                  ₹{(expense.amount / 100).toFixed(2)} · Paid by{" "}
-                  {memberNames[expense.paid_by] ?? "Unknown member"}
-                </p>
-              </div>
-            ))}
+          {!loading && error && (
+            <div className="alert-plate space-y-2" role="alert">
+              <p className="m-label" style={{ color: "var(--accent)", fontWeight: 700 }}>⚑ Signal lost</p>
+              <p className="text-sm" style={{ fontFamily: "var(--body)" }}>{error}</p>
+              <button type="button" onClick={load} className="cta-ghost">Retry</button>
+            </div>
+          )}
+          {!loading && !error && (
+            <ul>
+              {expenses.map((expense) => (
+                <li
+                  key={expense.id}
+                  className="flex items-baseline justify-between gap-3 py-3"
+                  style={{ borderTop: "1px dashed var(--ink-15)" }}
+                >
+                  <div className="min-w-0">
+                    <p className="text-[15px]" style={{ fontFamily: "var(--body)", fontWeight: 600, color: "var(--ink)", textTransform: "capitalize" }}>
+                      {expense.category}
+                    </p>
+                    <p className="m-label mt-0.5" style={{ letterSpacing: "0.12em" }}>
+                      Paid by {memberNames[expense.paid_by] ?? "Unknown"}
+                    </p>
+                  </div>
+                  <span
+                    className="shrink-0 tabular-nums"
+                    style={{ fontFamily: "var(--mono)", fontSize: 15, fontWeight: 700, color: "var(--ink)" }}
+                  >
+                    ₹{(expense.amount / 100).toFixed(2)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
           {!loading && !error && expenses.length === 0 && (
-            <p className="text-sm text-[var(--muted)]">No expenses yet.</p>
+            <p className="m-label py-4">Nothing charted yet — log the first spend</p>
           )}
         </div>
       </div>

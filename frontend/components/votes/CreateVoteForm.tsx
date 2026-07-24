@@ -68,50 +68,39 @@ export default function CreateVoteForm({
 
   if (published) {
     return (
-      <p className="text-xs text-[var(--muted)] px-1 py-2">
-        Vote published — others can now cast their votes.
-      </p>
+      <p className="m-label px-1 py-2">Vote published — the party can now cast</p>
     )
   }
 
   return (
-    <div className="border border-dashed border-[var(--line)] rounded-[4px] px-4 py-3 space-y-3">
+    <div className="px-4 py-3 space-y-3" style={{ border: "1px dashed var(--ink-15)", background: "var(--paper)" }}>
       <div className="flex items-center justify-between gap-2">
-        <p
-          className="text-xs uppercase tracking-widest text-[var(--muted)]"
-          style={{ fontFamily: "var(--font-body)" }}
-        >
-          Add options (organizer)
-        </p>
+        <p className="field-label">Add options (organizer)</p>
         <button
           type="button"
           onClick={generateAiOptions}
           disabled={aiLoading}
-          className="text-[11px] px-2.5 py-1 rounded-full border border-[var(--accent-lilac)]/50 text-[var(--accent-lilac)] hover:bg-[var(--accent-lilac)]/10 disabled:opacity-40 transition-colors"
-          style={{ fontFamily: "var(--font-body)" }}
+          className="cta-ghost"
+          style={{ minHeight: 34, padding: "6px 12px", fontSize: 10.5 }}
         >
-          {aiLoading ? "Generating…" : "AI suggest"}
+          {aiLoading ? "Generating…" : "◆ AI suggest"}
         </button>
       </div>
       {aiError && (
-        <p className="text-[11px] text-red-500" style={{ fontFamily: "var(--font-body)" }}>
-          {aiError}
-        </p>
+        <p className="m-label" style={{ color: "var(--accent)", fontWeight: 700 }}>⚑ {aiError}</p>
       )}
 
       {/* Option chips */}
       {options.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {options.map((opt) => (
-            <span
-              key={opt}
-              className="flex items-center gap-1.5 text-xs border border-[var(--line)] rounded-full px-3 py-1"
-            >
+            <span key={opt} className="chip flex items-center gap-1.5">
               {opt}
               <button
                 type="button"
                 onClick={() => removeOption(opt)}
-                className="text-[var(--muted)] hover:text-[var(--ink)] leading-none"
+                className="leading-none"
+                style={{ color: "var(--ink-40)" }}
                 aria-label={`Remove ${opt}`}
               >
                 ×
@@ -123,7 +112,7 @@ export default function CreateVoteForm({
 
       {/* Input row */}
       {options.length < 5 && (
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-end">
           <input
             type="text"
             value={draft}
@@ -132,14 +121,13 @@ export default function CreateVoteForm({
               if (e.key === "Enter") { e.preventDefault(); addOption() }
             }}
             placeholder="Add an option…"
-            className="flex-1 border border-[var(--line)] rounded-[4px] px-3 py-2 text-sm outline-none focus:border-[var(--accent-lilac)] transition-colors"
-            style={{ fontFamily: "var(--font-body)" }}
+            className="field-input flex-1"
           />
           <button
             type="button"
             onClick={addOption}
             disabled={!draft.trim()}
-            className="px-3 py-2 text-sm border border-[var(--line)] rounded-[4px] hover:border-[var(--accent-lilac)] disabled:opacity-40 transition-colors"
+            className="cta-ghost"
           >
             Add
           </button>
@@ -151,13 +139,12 @@ export default function CreateVoteForm({
         type="button"
         onClick={publish}
         disabled={options.length < 2 || publishing}
-        className="w-full h-10 rounded-[4px] bg-[var(--ink)] text-white text-sm font-medium disabled:opacity-40 transition-opacity"
-        style={{ fontFamily: "var(--font-body)" }}
+        className="cta sm w-full"
       >
         {publishing ? "Publishing…" : `Publish vote · ${options.length} option${options.length !== 1 ? "s" : ""}`}
       </button>
       {options.length < 2 && (
-        <p className="text-xs text-[var(--muted)]">Add at least 2 options to publish.</p>
+        <p className="m-label">Add at least 2 options to publish</p>
       )}
     </div>
   )

@@ -60,23 +60,15 @@ export default function VoteCard({
     }
   }
 
-  const accentColor = "var(--accent-lilac)"
-
   return (
-    <div
-      className="bg-white border border-[var(--line)] rounded-[4px] overflow-hidden"
-      style={{ borderLeft: `3px solid ${accentColor}` }}
-    >
+    <div className="card flat overflow-hidden">
       {/* Header */}
       <div className="px-5 pt-4 pb-3 flex items-center justify-between gap-3">
-        <h3
-          className="text-[19px] leading-snug"
-          style={{ fontFamily: "var(--font-display)", fontWeight: 300 }}
-        >
+        <h3 className="text-[20px] leading-snug" style={{ fontFamily: "var(--serif)", fontWeight: 600 }}>
           {label}
         </h3>
         {totalVotes > 0 && (
-          <span className="text-xs rounded-full px-2.5 py-1 bg-[var(--accent-lilac)]/10 text-[var(--accent-lilac)] font-medium tabular-nums">
+          <span className="chip hot tabular-nums">
             {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
           </span>
         )}
@@ -85,9 +77,7 @@ export default function VoteCard({
       {/* Options */}
       <div className="px-4 pb-4 space-y-2">
         {options.length === 0 ? (
-          <p className="text-sm text-[var(--muted)] px-1 py-2">
-            No options added yet.
-          </p>
+          <p className="m-label px-1 py-2">Nothing charted yet</p>
         ) : (
           options.map((option) => {
             const count = tally[option] ?? 0
@@ -104,61 +94,60 @@ export default function VoteCard({
                 className="w-full text-left group relative"
               >
                 <div
-                  className={`relative border rounded-[4px] px-4 py-3 transition-all duration-150 ${
-                    isSelected
-                      ? "border-[var(--accent-lilac)] bg-[var(--accent-lilac)]/6"
-                      : "border-[var(--line)] hover:border-[var(--accent-lilac)]/50 hover:bg-[var(--accent-lilac)]/3"
-                  }`}
+                  className="relative px-4 py-3 transition-all duration-150"
+                  style={{
+                    borderStyle: "solid",
+                    borderWidth: isSelected ? 2 : 1.5,
+                    borderColor: isSelected ? "var(--accent)" : "var(--ink-15)",
+                    background: isSelected ? "var(--paper-edge)" : "var(--paper)",
+                    minHeight: 44,
+                  }}
                 >
                   {/* Progress bar track */}
-                  <div className="absolute inset-0 rounded-[4px] overflow-hidden pointer-events-none">
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none">
                     <div
                       ref={(el) => { barRefs.current[option] = el }}
-                      className="h-full bg-[var(--accent-lilac)]/12 transition-[width] duration-500 ease-out"
-                      style={{ width: "0%" }}
+                      className="h-full transition-[width] duration-500 ease-out"
+                      style={{ width: "0%", background: "color-mix(in oklab, var(--accent) 12%, transparent)" }}
                     />
                   </div>
 
                   {/* Content */}
                   <div className="relative flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2.5 min-w-0">
-                      {/* Selected checkmark */}
+                      {/* Squared select mark */}
                       <span
-                        className={`w-4 h-4 shrink-0 rounded-full border flex items-center justify-center transition-all duration-150 ${
-                          isSelected
-                            ? "border-[var(--accent-lilac)] bg-[var(--accent-lilac)]"
-                            : "border-[var(--line)]"
-                        }`}
+                        className="shrink-0 flex items-center justify-center transition-all duration-150"
+                        style={{
+                          width: 16,
+                          height: 16,
+                          borderStyle: "solid",
+                          borderWidth: isSelected ? 0 : 1.5,
+                          borderColor: "var(--ink-15)",
+                          background: isSelected ? "var(--accent)" : "transparent",
+                        }}
                       >
                         {isSelected && (
                           <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
-                            <path
-                              d="M1 3L3 5L7 1"
-                              stroke="white"
-                              strokeWidth="1.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
+                            <path d="M1 3L3 5L7 1" stroke="var(--paper)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         )}
                       </span>
                       <span
-                        className={`text-sm truncate ${
-                          isSelected ? "font-medium text-[var(--ink)]" : "text-[var(--ink)]"
-                        }`}
-                        style={{ fontFamily: "var(--font-body)" }}
+                        className="text-sm truncate"
+                        style={{ fontFamily: "var(--body)", color: "var(--ink)", fontWeight: isSelected ? 600 : 400 }}
                       >
                         {isLoading ? "Casting…" : option}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-2 shrink-0" style={{ fontFamily: "var(--mono)" }}>
                       {totalVotes > 0 && (
-                        <span className="text-xs text-[var(--muted)] tabular-nums">
+                        <span className="text-[11px] tabular-nums" style={{ color: "var(--ink-60)", letterSpacing: "0.08em" }}>
                           {pct}%
                         </span>
                       )}
                       {count > 0 && (
-                        <span className="text-xs font-medium text-[var(--muted)] tabular-nums">
+                        <span className="text-[11px] tabular-nums" style={{ color: "var(--accent)", fontWeight: 700 }}>
                           {count}
                         </span>
                       )}

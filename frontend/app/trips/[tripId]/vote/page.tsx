@@ -113,22 +113,23 @@ function VotePageContent() {
       subtitle={`${totalResponded} of ${totalMembers} members have submitted preferences`}
     >
       {loading ? (
-        <p className="text-sm text-[var(--muted)]">Loading votes…</p>
+        <div className="max-w-md">
+          <p className="m-label mb-3">Plotting the ballot…</p>
+          <div className="skeleton-hatch h-4 w-full mb-2" />
+          <div className="skeleton-hatch h-4 w-4/5" />
+        </div>
       ) : (
         <div className="space-y-8 max-w-2xl">
           {/* Intro */}
           <div className="space-y-1">
-            <p
-              className="text-[13px] text-[var(--muted)]"
-              style={{ fontFamily: "var(--font-body)" }}
-            >
+            <p className="text-[14px]" style={{ fontFamily: "var(--body)", color: "var(--ink-60)" }}>
               Vote to move the trip forward. Everyone gets one vote per topic.
               {isOrganizer && " As organizer, you can add options for the group to vote on."}
             </p>
           </div>
 
           {/* Vote sections */}
-          {VOTE_TOPICS.map((topic) => {
+          {VOTE_TOPICS.map((topic, i) => {
             const tally = tallies[topic.type] ?? {}
             const options = optionSets[topic.type] ?? []
             const hasOptions = options.length > 0
@@ -137,13 +138,10 @@ function VotePageContent() {
               <section key={topic.type} className="space-y-3">
                 {/* Section label */}
                 <div className="flex items-center gap-3">
-                  <p
-                    className="text-[11px] uppercase tracking-[0.12em] text-[var(--muted)]"
-                    style={{ fontFamily: "var(--font-body)" }}
-                  >
-                    {topic.description}
-                  </p>
-                  <div className="flex-1 h-px bg-[var(--line)]" />
+                  <span className="fig-tag" style={{ flexShrink: 0 }}>
+                    <b>№ {String(i + 1).padStart(2, "0")}</b> {topic.description}
+                  </span>
+                  <div className="flex-1 h-px" style={{ background: "var(--ink-15)" }} />
                 </div>
 
                 {/* Vote card — only if there are options */}
@@ -161,13 +159,8 @@ function VotePageContent() {
 
                 {/* Empty state for non-organizers */}
                 {!hasOptions && !isOrganizer && (
-                  <div
-                    className="border border-[var(--line)] rounded-[4px] px-5 py-4"
-                    style={{ borderLeft: "3px solid var(--accent-lilac)" }}
-                  >
-                    <p className="text-sm text-[var(--muted)]">
-                      The organizer hasn&apos;t added options yet.
-                    </p>
+                  <div className="card flat px-5 py-4" style={{ borderLeftWidth: 3, borderLeftColor: "var(--accent)" }}>
+                    <p className="m-label">The organizer hasn&apos;t charted options yet</p>
                   </div>
                 )}
 
@@ -186,53 +179,46 @@ function VotePageContent() {
           {/* Member participation status */}
           <section className="space-y-3">
             <div className="flex items-center gap-3">
-              <p
-                className="text-[11px] uppercase tracking-[0.12em] text-[var(--muted)]"
-                style={{ fontFamily: "var(--font-body)" }}
-              >
-                Participation
-              </p>
-              <div className="flex-1 h-px bg-[var(--line)]" />
+              <span className="fig-tag" style={{ flexShrink: 0 }}>
+                <b>◆</b> Participation
+              </span>
+              <div className="flex-1 h-px" style={{ background: "var(--ink-15)" }} />
             </div>
-            <div
-              className="border border-[var(--line)] rounded-[4px] px-5 py-4 space-y-3"
-              style={{ borderLeft: "3px solid var(--accent-lilac)" }}
-            >
+            <div className="card flat px-5 py-4 space-y-3">
               {/* Progress bar */}
               <div className="space-y-1.5">
-                <div className="flex justify-between text-xs text-[var(--muted)]">
+                <div className="flex justify-between m-label">
                   <span>Preferences submitted</span>
-                  <span className="tabular-nums">{totalResponded} / {totalMembers}</span>
+                  <span className="tabular-nums" style={{ color: "var(--accent)", fontWeight: 700 }}>{totalResponded} / {totalMembers}</span>
                 </div>
-                <div className="h-1.5 rounded-full bg-[var(--line)] overflow-hidden">
+                <div className="h-1.5 overflow-hidden" style={{ background: "var(--ink-08)" }}>
                   <div
-                    className="h-full rounded-full transition-[width] duration-500"
+                    className="h-full transition-[width] duration-500"
                     style={{
                       width: totalMembers > 0 ? `${(totalResponded / totalMembers) * 100}%` : "0%",
-                      background: "linear-gradient(90deg, var(--accent-coral), var(--accent-pink))",
+                      background: "var(--accent)",
                     }}
                   />
                 </div>
               </div>
               {/* Member list */}
-              <ul className="space-y-1.5">
+              <ul>
                 {members.map((m) => (
                   <li
                     key={m.user.id}
-                    className="flex items-center justify-between text-sm"
+                    className="flex items-center justify-between text-sm py-2.5"
+                    style={{ borderTop: "1px dashed var(--ink-15)" }}
                   >
-                    <span style={{ fontFamily: "var(--font-body)" }}>
+                    <span style={{ fontFamily: "var(--body)", color: "var(--ink)" }}>
                       {m.user.name}
                       {m.role === "organizer" && (
-                        <span className="ml-1.5 text-[10px] text-[var(--muted)] uppercase tracking-wider">
-                          organizer
-                        </span>
+                        <span className="ml-2 m-label">organizer</span>
                       )}
                     </span>
                     {m.preference_submitted ? (
-                      <span className="text-xs text-emerald-600 font-medium">Survey ✓</span>
+                      <span className="m-label" style={{ color: "var(--accent)", fontWeight: 700 }}>◆ Survey in</span>
                     ) : (
-                      <span className="text-xs text-[var(--muted)]">Pending</span>
+                      <span className="m-label" style={{ color: "var(--ink-40)" }}>○ Pending</span>
                     )}
                   </li>
                 ))}
