@@ -77,6 +77,7 @@ export default function RootLayout({
     <html lang="en" className={`${playfair.variable} ${sourceSerif.variable} ${plexMono.variable}`}>
       <body className="antialiased">
         <Providers>{children}</Providers>
+        <script src="/analytics.js" defer />
       </body>
     </html>
   );
