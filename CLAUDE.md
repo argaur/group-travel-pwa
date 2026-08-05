@@ -116,3 +116,13 @@ Codex background: `codex exec --prompt "<task>" --full-auto --model gpt-4o-mini 
 - **Current task:** V2 polish — Trivo rebrand follow-on renames + cartographic frontend redesign
 - **Blocker:** Apply for Razorpay early (onboarding takes time)
 - **Last updated:** 2026-07-23
+
+## Model notes
+**This section expires. Review it at every model launch and every Claude Code version bump.**
+Current as of 2026-08-05: Opus 5 / Sonnet 5 / Fable 5, Claude Code 2.1.222. Checked by
+`Claude Optimisation/scripts/claude-md-eval.sh`, which found nothing stale in this file.
+- Delegation is not automatic. Claude Code 2.1.219 and later suppress subagents on Opus 5 unless
+  the user asks for one, so name the agent when you want it.
+- Do not add verification, anti-laziness or hedging instructions. These models self-verify, are
+  direct by default, and obey a hedge literally by reporting less.
+- Reasoning: `Claude Optimisation/docs/setup-versions/artifacts/2026-08-05-model5-migration/`.
