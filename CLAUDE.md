@@ -85,10 +85,10 @@ group-travel-pwa/
 ---
 
 ## Status
-- **State:** active — V2 live in production (Next.js 16 frontend on Vercel, FastAPI backend on Railway)
+- **State:** active — V2 live in production (Next.js 16 frontend on Vercel, FastAPI backend on Railway, removal planned)
 - **Current task:** V2 polish — Trivo rebrand follow-on renames + cartographic frontend redesign
 - **Blocker:** Apply for Razorpay early (onboarding takes time)
-- **Last updated:** 2026-07-23
+- **Last updated:** 2026-09-24
 
 ## Model notes
 **This section expires. Review it at every model launch and every Claude Code version bump.**
