@@ -110,7 +110,7 @@ function VotePageContent() {
       tripId={params.tripId}
       active="vote"
       title="Group decisions"
-      subtitle={`${totalResponded} of ${totalMembers} members have submitted preferences`}
+      subtitle={loading ? undefined : `${totalResponded} of ${totalMembers} members have submitted preferences`}
     >
       {loading ? (
         <div className="max-w-md">

@@ -87,6 +87,25 @@ async def get_current_user(
     return user
 
 
+def decode_user_id(raw: Optional[str]) -> uuid.UUID:
+    """Validate a JWT and return its user id. No database access, so callers can hold no connection while doing it."""
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Invalid or expired token",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    if not raw:
+        raise credentials_exception
+    try:
+        payload = jwt.decode(raw, settings.secret_key, algorithms=[settings.algorithm])
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise credentials_exception
+        return uuid.UUID(user_id)
+    except (JWTError, ValueError):
+        raise credentials_exception
+
+
 async def get_current_user_sse(
     token: Optional[str] = Query(None, description="JWT for EventSource clients (no Auth header support)"),
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(HTTPBearer(auto_error=False)),

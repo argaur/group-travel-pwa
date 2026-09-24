@@ -44,6 +44,8 @@ export default function DashboardLandingPage() {
   const router = useRouter()
   const { status, data: session } = useSession()
   const [trips, setTrips] = useState<TripCard[] | null>(null)
+  const [loadFailed, setLoadFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -54,17 +56,21 @@ export default function DashboardLandingPage() {
   useEffect(() => {
     if (status !== "authenticated") return
     let cancelled = false
+    setLoadFailed(false)
+    setTrips(null)
     ;(async () => {
       try {
         await ensureBackendToken()
         const data = await api.get<TripCard[]>("/trips")
         if (!cancelled) setTrips(data)
-      } catch {
-        if (!cancelled) setTrips([])
+      } catch (err) {
+        // Keep "failed to load" distinct from "no trips": an empty list would tell the user their trips are gone.
+        console.error("[dashboard] could not load trips", err)
+        if (!cancelled) setLoadFailed(true)
       }
     })()
     return () => { cancelled = true }
-  }, [status])
+  }, [status, attempt])
 
   if (status === "unauthenticated" || status === "loading") {
     return (
@@ -137,7 +143,23 @@ export default function DashboardLandingPage() {
         </div>
 
         {/* Trip grid */}
-        {trips === null ? (
+        {loadFailed ? (
+          <div
+            className="px-8 py-16 text-center"
+            role="alert"
+            style={{ border: "2px dashed var(--accent)", background: "var(--paper)" }}
+          >
+            <p className="text-[28px]" style={{ fontFamily: "var(--serif)", fontWeight: 600, color: "var(--ink)" }}>
+              Couldn&apos;t load your trips.
+            </p>
+            <p className="text-[14px] mt-3 mb-6" style={{ fontFamily: "var(--body)", color: "var(--ink-60)" }}>
+              Your trips are safe. The server didn&apos;t answer in time.
+            </p>
+            <button type="button" className="cta sm inline-flex" onClick={() => setAttempt((n) => n + 1)}>
+              Try again <span className="arrow" aria-hidden="true">→</span>
+            </button>
+          </div>
+        ) : trips === null ? (
           <div className="grid gap-4 sm:grid-cols-2">
             {[1, 2].map((i) => (
               <div key={i} className="card flat overflow-hidden">

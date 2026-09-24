@@ -143,7 +143,7 @@ function TerrainMini({
           <line x1={X1 + 8} y1={CY - 8} x2={X1 + 24} y2={CY + 8} />
           <line x1={X1 + 24} y1={CY - 8} x2={X1 + 8} y2={CY + 8} />
         </g>
-        <text x={X1 + 16} y={CY - 18} fontFamily="var(--mono)" fontSize="10" letterSpacing="2" fill="var(--ink)" fontWeight="700" textAnchor="middle">
+        <text x={X1 + 24} y={CY - 18} fontFamily="var(--mono)" fontSize="10" letterSpacing="2" fill="var(--ink)" fontWeight="700" textAnchor="end">
           THE TRIP
         </text>
       </g>

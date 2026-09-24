@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
+import { tripDatesError } from "@/lib/dates"
 import { api } from "@/lib/api"
 import { ensureBackendToken } from "@/lib/backend-auth"
 import WizardShell from "@/components/wizard/WizardShell"
@@ -61,6 +62,7 @@ export default function NewTripPage() {
 
   function nextDisabled() {
     if (step === 0) return !name.trim()
+    if (step === 2) return tripDatesError(startDate, endDate) !== null
     return false
   }
 
@@ -208,10 +210,16 @@ export default function NewTripPage() {
                 type="date"
                 className="field-input"
                 value={endDate}
+                min={startDate || undefined}
                 onChange={(e) => setEndDate(e.target.value)}
               />
             </div>
           </div>
+          {tripDatesError(startDate, endDate) && (
+            <div className="alert-plate" role="alert">
+              <p className="m-label" style={{ color: "var(--accent)", fontWeight: 700 }}>⚑ {tripDatesError(startDate, endDate)}</p>
+            </div>
+          )}
 
           <div>
             <label className="field-label block mb-2">Group size estimate</label>

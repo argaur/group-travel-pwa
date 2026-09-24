@@ -45,12 +45,8 @@ engine = create_async_engine(
     _normalize_asyncpg_url(settings.database_url),
     echo=False,
     pool_pre_ping=True,
-    # Small on purpose: on Vercel each concurrent invocation gets its own
-    # process and opens its own pool. DATABASE_URL must point at Neon's
-    # pooled (-pooler) endpoint — a large pool here multiplies against
-    # concurrent invocations and exhausts Neon's direct connection limit.
-    pool_size=1,
-    max_overflow=0,
+    pool_size=settings.db_pool_size,
+    max_overflow=settings.db_max_overflow,
 )
 
 AsyncSessionLocal = async_sessionmaker(

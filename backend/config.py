@@ -2,6 +2,16 @@ from pydantic_settings import BaseSettings
 from functools import lru_cache
 
 
+BUILTIN_ORIGINS = [
+    "http://localhost:3000",
+    "https://frontend-rmrv09xjy-argaurs-projects.vercel.app",
+    "https://frontend-lovat-phi-52.vercel.app",
+    "https://frontend-argaurs-projects.vercel.app",
+    "https://trivo-argaur.vercel.app",
+    "https://trivo.gauravg.dev",
+]
+
+
 class Settings(BaseSettings):
     database_url: str
     anthropic_api_key: str
@@ -17,14 +27,15 @@ class Settings(BaseSettings):
     razorpay_key_id: str = ""
     razorpay_key_secret: str = ""
 
-    allowed_origins: str = (
-        "http://localhost:3000,"
-        "https://frontend-rmrv09xjy-argaurs-projects.vercel.app,"
-        "https://frontend-lovat-phi-52.vercel.app,"
-        "https://frontend-argaurs-projects.vercel.app,"
-        "https://trivo-argaur.vercel.app,"
-        "https://trivo.gauravg.dev"
-    )
+    # Connection pool. Defaults suit a long-lived process (Railway, local dev). On a
+    # serverless host set DB_POOL_SIZE=1 and DB_MAX_OVERFLOW=0: each invocation gets its
+    # own pool, so a large one multiplies against Neon's connection limit.
+    db_pool_size: int = 5
+    db_max_overflow: int = 5
+
+    # Extra origins to allow, comma-separated. Always added to BUILTIN_ORIGINS, never a
+    # replacement for them: a host that sets this variable used to lose every built-in origin.
+    allowed_origins: str = ""
 
     # Google Places API (optional — demo sample data when empty)
     google_maps_api_key: str = ""
@@ -41,7 +52,8 @@ class Settings(BaseSettings):
 
     @property
     def origins_list(self) -> list[str]:
-        return [o.strip() for o in self.allowed_origins.split(",")]
+        extra = [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+        return list(dict.fromkeys([*BUILTIN_ORIGINS, *extra]))
 
     class Config:
         env_file = ".env"
