@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator
 from typing import Optional
 from datetime import date
 from sqlalchemy import func, select
@@ -21,6 +21,12 @@ class TripCreate(BaseModel):
     end_date: Optional[date] = None
     trip_type: str = "leisure"
     group_size_estimate: Optional[int] = None
+
+    @model_validator(mode="after")
+    def _end_not_before_start(self):
+        if self.start_date and self.end_date and self.end_date < self.start_date:
+            raise ValueError("end_date must not be before start_date")
+        return self
 
 
 class PlaceUpdate(BaseModel):
