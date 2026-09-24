@@ -32,6 +32,10 @@ AI-native group trip coordination Progressive Web App. Solves silent budget misa
 **The backend runs on Railway, which estate.md retired on 2026-07-31.** Recorded because it is where
 production runs today. It needs a server, so the move is to Vercel or the Oracle VM, and it is open
 work under "continue stack migration". Do not add new deployment work on Railway.
+**2026-09-24:** Gaurav decided to remove Railway entirely. Plan: `docs/railway-cutover-plan.md` (separate Vercel
+project `trivo-api`, region `sin1`: Neon is ap-southeast-1). **Railway auto-deploys every merge to `main`**, docs
+included, so check what a merge redeploys. Pool size is `DB_POOL_SIZE`/`DB_MAX_OVERFLOW` (default 5/5); realtime
+uses an in-memory bus unless `UPSTASH_REDIS_REST_*` is set.
 
 > Confirmed production targets — never assume a default (per global Non-Negotiables). **Railway runs the repo-root `railway.toml` `startCommand`** (NOT `backend/Procfile`) — verified via the deploy logs. **CRITICAL (fixed 2026-07-23, commit `73a865f`):** the service **Root Directory is `backend/`**, so the container WORKDIR is already inside `backend/`. The startCommand MUST be `uvicorn main:app --host 0.0.0.0 --port $PORT` with **NO `cd backend`** — an earlier `cd backend` prefix hit `cd: backend: No such file or directory`, so uvicorn never started, `/health` failed, and Railway kept every new deploy unpromoted (prod pinned to an ancient build for a full day). **Migrations are applied OUT-OF-BAND** (`alembic upgrade head` from `backend/` against the shared Neon DB), not in the start command — running them there stalled deploys past the healthcheck window. Railway's `DATABASE_URL` == local `.env` (same Neon db `group_travel`).
 
@@ -88,7 +92,7 @@ group-travel-pwa/
 - **State:** active — V2 live in production (Next.js 16 frontend on Vercel, FastAPI backend on Railway, removal planned)
 - **Current task:** V2 polish — Trivo rebrand follow-on renames + cartographic frontend redesign
 - **Blocker:** Apply for Razorpay early (onboarding takes time)
-- **Last updated:** 2026-09-24
+- **Last updated:** 2026-09-24 (E2E fixes merged; see memory/project.md)
 
 ## Model notes
 **This section expires. Review it at every model launch and every Claude Code version bump.**

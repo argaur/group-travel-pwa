@@ -23,6 +23,12 @@ Vercel Hobby is for personal, non-commercial use. Razorpay payments (PRD) make t
 3. **Keep Upstash Redis on the free tier.** $0, already coded. A zero-service alternative exists (Neon polling) but keeps Neon compute awake per open stream. Revisit only if the free tier is hit.
 4. **Domain:** `trivo-api.gauravg.dev` (Cloudflare DNS CNAME to Vercel), per the estate rule.
 
+## Region and latency (added 2026-09-24 after the E2E run)
+
+Neon is `ap-southeast-1` (Singapore). A request makes about 10 database round trips (4 queries plus pre-ping, prepared statements and commit). Railway served ~1.7s per call, most likely because its region is far from Neon. Set the `trivo-api` project's function region to `sin1` (Vercel's default is `iad1`) and confirm with the same test: 6 concurrent calls to `/members` should finish together, not in steps.
+
+Already done on `main` (PR #4): pool size is a setting (use `DB_POOL_SIZE=1`, `DB_MAX_OVERFLOW=0` on Vercel), the in-memory bus is used unless Upstash is set, and the stream releases its DB connection before streaming. Upstash is only needed on Vercel.
+
 ## Two code changes the 300s limit forces
 
 Today `stream.py` starts each connection from "now" and `sse.ts` reconnects after a 3s backoff. On Vercel every stream dies every 5 minutes, so events published in that gap are lost.
@@ -37,13 +43,13 @@ Write a failing test first for the reconnect gap, per the TDD rule.
 
 Nothing here runs without a go-ahead. Steps 1 to 3 are safe; step 5 is a production push.
 
-1. **Code prep (branch `railway-removal`):** delete root `vercel.json`, `railway.toml`, `backend/Procfile`. Apply the two changes above with tests.
+1. **Code prep (branch `railway-removal`):** apply the two changes above with tests. Root `vercel.json` is already gone (PR #3). Keep `railway.toml` and `backend/Procfile` until step 7: Railway runs its `startCommand` and auto-deploys every merge to `main`, so deleting them earlier breaks production.
 2. **Create Vercel project `trivo-api`** from the same GitHub repo, Root Directory `backend/`. Region: match the Neon region (check the Neon dashboard; Vercel default is `iad1`).
 3. **Set env vars on `trivo-api`** (values from Railway, never pasted in chat): `DATABASE_URL` (Neon pooled host), `ANTHROPIC_API_KEY`, `SECRET_KEY`, `NEXTAUTH_SECRET` (must equal the frontend's `AUTH_SECRET`), `ALLOWED_ORIGINS`, `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `VAPID_*`, `SENTRY_DSN`, and the Razorpay and Maps keys if set. Deploy a preview and hit `/health`.
 4. **Smoke test the preview:** `/health`, sign in, create a trip, open the dashboard stream, wait past 300s, confirm reconnect loses no events.
 5. **Attach `trivo-api.gauravg.dev`**, set `NEXT_PUBLIC_API_URL=https://trivo-api.gauravg.dev/api/v1` on the `frontend` project, redeploy the frontend to production (confirm first).
 6. **Verify in production:** Google sign-in, trip create, live SSE update between two browsers.
-7. **Retire Railway:** delete project `group-project-pwa` (`09a1142a-65e0-4763-b456-caa199fc2efa`) and confirm the billing page shows no active service. Do this only after step 6 passes.
+7. **Retire Railway:** delete `railway.toml` and `backend/Procfile`, then delete project `group-project-pwa` (`09a1142a-65e0-4763-b456-caa199fc2efa`) and confirm the billing page shows no active service. Do this only after step 6 passes.
 8. **Docs:** remove Railway from `CLAUDE.md`, `AGENTS.md`, `GEMINI.md`, `README.md`; update the Deploy Targets block to `trivo-api`; add `trivo-api.gauravg.dev` to the backend CORS default and drop the stale Railway URL.
 
 ## Rollback
