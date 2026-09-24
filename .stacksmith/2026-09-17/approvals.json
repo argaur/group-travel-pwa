@@ -1,0 +1,111 @@
+{
+  "project": "group-travel-pwa (Trivo)",
+  "created": "2026-09-17T11:13:55.892Z",
+  "source": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\.stacksmith\\2026-09-17\\recommendations.json",
+  "items": [
+    {
+      "id": "r1",
+      "area": "Frontend framework (Next.js)",
+      "decision": "UPGRADE",
+      "recommendation": "next ^16.2.2 resolved to 16.3.5 (npm update, already inside the existing semver range)",
+      "install_scope": "RUNTIME_DEPENDENCY",
+      "status": "approved",
+      "quote": "Approve all",
+      "decided_at": "2026-09-17T11:14:01.798Z",
+      "outcome": "applied",
+      "note": "npm install next@16.3.5; verified via tsc --noEmit, lint, npm run build (all pass)",
+      "recorded_at": "2026-09-17T11:37:11.535Z"
+    },
+    {
+      "id": "r2",
+      "area": "Auth (Auth.js v5 / next-auth)",
+      "decision": "UPGRADE",
+      "recommendation": "next-auth 5.0.0-beta.32 (same pre-release channel)",
+      "install_scope": "RUNTIME_DEPENDENCY",
+      "status": "approved",
+      "quote": "Approve all",
+      "decided_at": "2026-09-17T11:14:01.799Z",
+      "outcome": "applied",
+      "note": "npm install next-auth@5.0.0-beta.32; verified via build; manual OAuth flow test pending Google Console fix",
+      "recorded_at": "2026-09-17T11:37:11.659Z"
+    },
+    {
+      "id": "r3",
+      "area": "CSS tooling (postcss)",
+      "decision": "UPGRADE",
+      "recommendation": "postcss 8.5.28 (already allowed by the existing ^8 range — lockfile refresh only)",
+      "install_scope": "RUNTIME_DEPENDENCY",
+      "status": "approved",
+      "quote": "Approve all",
+      "decided_at": "2026-09-17T11:14:01.799Z",
+      "outcome": "applied",
+      "note": "npm update postcss + npm audit fix; critical/high count 3/9 -> 0/1 (remaining high is unrelated workbox chain, no upstream fix)",
+      "recorded_at": "2026-09-17T11:37:11.779Z"
+    },
+    {
+      "id": "r6",
+      "area": "AI SDK (Anthropic Python)",
+      "decision": "UPGRADE",
+      "recommendation": "anthropic 1.6.0",
+      "install_scope": "RUNTIME_DEPENDENCY",
+      "status": "approved",
+      "quote": "Approve all",
+      "decided_at": "2026-09-17T11:14:01.799Z",
+      "outcome": "applied",
+      "note": "pip install anthropic==1.6.0; pytest 47 passed; found+fixed a real conftest.py bug that silently disabled RUN_LIVE_EVALS=1 (dummy key always won over .env); ran full live eval suite for real (24/25 passed) against anthropic 1.6.0 with a working key -- messages.parse/output_format confirmed compatible; 1 live-model failure found (too_few_responses: anonymity guardrail breach), unrelated to the SDK, flagged separately",
+      "recorded_at": "2026-09-17T12:05:28.974Z"
+    },
+    {
+      "id": "r7",
+      "area": "Backend framework (FastAPI / Starlette)",
+      "decision": "UPGRADE",
+      "recommendation": "fastapi 0.141.1 (starlette 1.6.0)",
+      "install_scope": "RUNTIME_DEPENDENCY",
+      "status": "approved",
+      "quote": "Approve all",
+      "decided_at": "2026-09-17T11:14:01.799Z",
+      "outcome": "applied",
+      "note": "pip install fastapi==0.141.1 (starlette 1.6.0 transitively); pytest 47 passed",
+      "recorded_at": "2026-09-17T11:37:12.018Z"
+    },
+    {
+      "id": "r9",
+      "area": "Error tracking / observability",
+      "decision": "ADD",
+      "recommendation": "Sentry (Python/FastAPI SDK + Next.js SDK)",
+      "install_scope": "RUNTIME_DEPENDENCY",
+      "status": "approved",
+      "quote": "Approve all",
+      "decided_at": "2026-09-17T11:14:01.799Z",
+      "outcome": "applied",
+      "note": "sentry-sdk[fastapi]==2.69.2 wired in backend/main.py (send_default_pii=false); @sentry/nextjs@10.75.0 wired via instrumentation.ts/instrumentation-client.ts, no-op when DSN unset; build verified, DSN not yet supplied",
+      "recorded_at": "2026-09-17T11:37:12.145Z"
+    },
+    {
+      "id": "r10",
+      "area": "Dependency-health CI gate",
+      "decision": "ADD",
+      "recommendation": "npm audit --audit-level=high in the frontend CI job; pip-audit in the backend CI job",
+      "install_scope": "CI",
+      "status": "approved",
+      "quote": "Approve all",
+      "decided_at": "2026-09-17T11:14:01.799Z",
+      "outcome": "applied",
+      "note": "added npm audit (critical) + pip-audit (ignoring unfixable PYSEC-2026-1325) as CI steps; both verified locally to pass",
+      "recorded_at": "2026-09-17T11:37:12.268Z"
+    },
+    {
+      "id": "r12",
+      "area": "Frontend test coverage",
+      "decision": "ADD",
+      "recommendation": "Vitest + React Testing Library for component/unit tests, mirroring the backend's existing pytest + CI pattern",
+      "install_scope": "DEV_DEPENDENCY",
+      "status": "approved",
+      "quote": "Approve all",
+      "decided_at": "2026-09-17T11:14:01.799Z",
+      "outcome": "applied",
+      "note": "vitest@4.1.11 + Testing Library; 7 tests written for OptionTile.tsx and lib/sse.ts reconnect logic, all passing; test:run added to CI",
+      "recorded_at": "2026-09-17T11:37:12.388Z"
+    }
+  ]
+}

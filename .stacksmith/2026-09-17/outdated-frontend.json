@@ -1,0 +1,93 @@
+{
+  "@types/node": {
+    "current": "20.19.37",
+    "wanted": "20.19.43",
+    "latest": "22.20.3",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\@types\\node"
+  },
+  "@types/react": {
+    "current": "18.3.28",
+    "wanted": "18.3.31",
+    "latest": "19.3.0",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\@types\\react"
+  },
+  "@types/react-dom": {
+    "current": "18.3.7",
+    "wanted": "18.3.7",
+    "latest": "19.3.0",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\@types\\react-dom"
+  },
+  "eslint": {
+    "current": "9.39.4",
+    "wanted": "9.39.5",
+    "latest": "10.10.0",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\eslint"
+  },
+  "eslint-config-next": {
+    "current": "16.2.2",
+    "wanted": "16.3.5",
+    "latest": "16.3.5",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\eslint-config-next"
+  },
+  "next": {
+    "current": "16.2.2",
+    "wanted": "16.3.5",
+    "latest": "16.3.5",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\next"
+  },
+  "next-auth": {
+    "current": "5.0.0-beta.30",
+    "wanted": "5.0.0-beta.32",
+    "latest": "4.24.15",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\next-auth"
+  },
+  "postcss": {
+    "current": "8.5.8",
+    "wanted": "8.5.28",
+    "latest": "8.5.28",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\postcss"
+  },
+  "react": {
+    "current": "18.3.1",
+    "wanted": "18.3.1",
+    "latest": "19.3.0",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\react"
+  },
+  "react-dom": {
+    "current": "18.3.1",
+    "wanted": "18.3.1",
+    "latest": "19.3.0",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\react-dom"
+  },
+  "tailwindcss": {
+    "current": "3.4.19",
+    "wanted": "3.4.19",
+    "latest": "4.3.3",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\tailwindcss"
+  },
+  "typescript": {
+    "current": "5.9.3",
+    "wanted": "5.9.3",
+    "latest": "7.0.2",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\typescript"
+  },
+  "webpack": {
+    "current": "5.105.4",
+    "wanted": "5.111.0",
+    "latest": "5.111.0",
+    "dependent": "frontend",
+    "location": "C:\\Users\\Gaurav Gupta\\Documents\\Projects\\group-travel-pwa\\frontend\\node_modules\\webpack"
+  }
+}
