@@ -7,6 +7,7 @@ class FakeEventSource {
   url: string
   closed = false
   onerror: (() => void) | null = null
+  onopen: (() => void) | null = null
   listeners: Record<string, ((e: MessageEvent) => void)[]> = {}
 
   constructor(url: string) {
@@ -20,6 +21,14 @@ class FakeEventSource {
 
   close() {
     this.closed = true
+  }
+
+  emitOpen() {
+    this.onopen?.()
+  }
+
+  emitEvent(type: string, data: string, lastEventId: string) {
+    this.listeners[type]?.forEach((cb) => cb({ data, lastEventId } as MessageEvent))
   }
 
   emitError() {
@@ -75,5 +84,29 @@ describe("connectTripStream", () => {
     first.emitError()
     await vi.advanceTimersByTimeAsync(30_000)
     expect(FakeEventSource.instances).toHaveLength(1) // no reconnect after stop()
+  })
+
+  it("resumes from the last event id after the stream drops", async () => {
+    const { connectTripStream } = await import("../sse")
+    connectTripStream("trip-1", () => {})
+
+    const first = FakeEventSource.instances[0]
+    first.emitEvent("vote_cast", "{}", "42-0")
+    first.emitError()
+    await vi.advanceTimersByTimeAsync(3_000)
+
+    expect(FakeEventSource.instances[1].url).toContain("last_id=42-0")
+  })
+
+  it("reconnects in 500ms when a stream that opened is closed by the server", async () => {
+    const { connectTripStream } = await import("../sse")
+    connectTripStream("trip-1", () => {})
+
+    const first = FakeEventSource.instances[0]
+    first.emitOpen()
+    first.emitError()
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(FakeEventSource.instances).toHaveLength(2)
   })
 })

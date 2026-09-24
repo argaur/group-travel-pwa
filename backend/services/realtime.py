@@ -10,6 +10,7 @@ that triggered it: a bus failure is logged and the write still succeeds.
 import asyncio
 import json
 import logging
+import time
 from typing import AsyncIterator, Optional, Protocol
 
 from config import get_settings
@@ -26,7 +27,13 @@ def _format(event_type: str, data: dict) -> str:
 
 class Bus(Protocol):
     async def publish(self, trip_id: str, event_type: str, data: dict) -> None: ...
-    def subscribe(self, trip_id: str, keepalive_seconds: float = ...) -> AsyncIterator[str]: ...
+    def subscribe(
+        self,
+        trip_id: str,
+        keepalive_seconds: float = ...,
+        last_id: Optional[str] = ...,
+        max_seconds: Optional[float] = ...,
+    ) -> AsyncIterator[str]: ...
 
 
 class MemoryBus:
@@ -38,7 +45,13 @@ class MemoryBus:
         for queue in list(self._subscribers.get(trip_id, ())):
             queue.put_nowait(message)
 
-    def subscribe(self, trip_id: str, keepalive_seconds: float = KEEPALIVE_SECONDS) -> AsyncIterator[str]:
+    def subscribe(
+        self,
+        trip_id: str,
+        keepalive_seconds: float = KEEPALIVE_SECONDS,
+        last_id: Optional[str] = None,  # no event ids in memory: nothing to replay
+        max_seconds: Optional[float] = None,  # long-lived hosts have no stream time limit
+    ) -> AsyncIterator[str]:
         # Register now, not on first iteration, so no event published before the
         # response starts streaming is missed.
         queue: asyncio.Queue = asyncio.Queue()
@@ -84,19 +97,29 @@ class RedisBus:
         )
         await self._redis.expire(key, self._STREAM_TTL_SECONDS)
 
-    def subscribe(self, trip_id: str, keepalive_seconds: float = KEEPALIVE_SECONDS) -> AsyncIterator[str]:
-        return self._poll(trip_id)
+    def subscribe(
+        self,
+        trip_id: str,
+        keepalive_seconds: float = KEEPALIVE_SECONDS,
+        last_id: Optional[str] = None,
+        max_seconds: Optional[float] = None,
+    ) -> AsyncIterator[str]:
+        return self._poll(trip_id, last_id, max_seconds)
 
-    async def _poll(self, trip_id: str) -> AsyncIterator[str]:
+    async def _poll(self, trip_id: str, last_id: Optional[str], max_seconds: Optional[float]) -> AsyncIterator[str]:
+        """Stream events after last_id (or from now). Ends cleanly at max_seconds so a host with a
+        function time limit closes the stream itself; the client resumes with the last id it saw."""
         key = self._key(trip_id)
-        latest = await self._redis.xrevrange(key, "+", "-", count=1)
-        last_id = latest[0][0] if latest else "0"
-        while True:
+        if last_id is None:
+            latest = await self._redis.xrevrange(key, "+", "-", count=1)
+            last_id = latest[0][0] if latest else "0"
+        deadline = None if max_seconds is None else time.monotonic() + max_seconds
+        while deadline is None or time.monotonic() < deadline:
             entries = await self._redis.xrange(key, f"({last_id}", "+")
             if entries:
                 for entry_id, fields in entries:
                     last_id = entry_id
-                    yield f"event: {fields['event']}\ndata: {fields['data']}\n\n"
+                    yield f"id: {entry_id}\nevent: {fields['event']}\ndata: {fields['data']}\n\n"
             else:
                 yield ": keepalive\n\n"
             await asyncio.sleep(self._POLL_INTERVAL_SECONDS)

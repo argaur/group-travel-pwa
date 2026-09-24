@@ -27,6 +27,7 @@ export type SSEEvent =
     }
   | { type: "rsvp_updated"; data: { user_id: string; rsvp_status: string } }
 
+const CLEAN_RECONNECT_MS = 500
 const BACKOFF_MS = [3_000, 10_000, 30_000]
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/v1"
 
@@ -47,19 +48,29 @@ export function connectTripStream(
   let es: EventSource
   let attempt = 0
   let stopped = false
+  let lastEventId = ""
+  let opened = false
 
   function streamUrl(): string {
     const token = getBackendToken()
-    const qs = token ? `?token=${encodeURIComponent(token)}` : ""
+    const params = new URLSearchParams()
+    if (token) params.set("token", token)
+    if (lastEventId) params.set("last_id", lastEventId)
+    const qs = params.size ? `?${params}` : ""
     return `${API_BASE}/trips/${tripId}/stream${qs}`
   }
 
   function connect() {
+    opened = false
     es = new EventSource(streamUrl(), { withCredentials: true })
+    es.onopen = () => {
+      opened = true
+    }
 
     EVENT_TYPES.forEach((type) => {
       es.addEventListener(type, (e: MessageEvent) => {
         attempt = 0
+        if (e.lastEventId) lastEventId = e.lastEventId
         try {
           onEvent({ type, data: JSON.parse(e.data) } as SSEEvent)
         } catch {
@@ -71,8 +82,14 @@ export function connectTripStream(
     es.onerror = () => {
       es.close()
       if (stopped) return
-      const delay = BACKOFF_MS[Math.min(attempt, BACKOFF_MS.length - 1)]
-      attempt++
+      let delay: number
+      if (opened) {
+        attempt = 0
+        delay = CLEAN_RECONNECT_MS
+      } else {
+        delay = BACKOFF_MS[Math.min(attempt, BACKOFF_MS.length - 1)]
+        attempt++
+      }
       setTimeout(connect, delay)
     }
   }

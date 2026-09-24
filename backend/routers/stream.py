@@ -13,6 +13,9 @@ from services.realtime import get_bus, publish  # noqa: F401  (publish is re-exp
 
 router = APIRouter()
 
+# Vercel Hobby kills a function at 300s. End the stream first so the client resumes from its last id.
+STREAM_MAX_SECONDS = 280.0
+
 _optional_bearer = HTTPBearer(auto_error=False)
 
 
@@ -20,6 +23,7 @@ _optional_bearer = HTTPBearer(auto_error=False)
 async def trip_stream(
     trip_id: str,
     token: Optional[str] = Query(None, description="JWT for EventSource clients (no Auth header support)"),
+    last_id: Optional[str] = Query(None, description="Resume after this event id (sent by the client on reconnect)"),
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(_optional_bearer),
 ):
     """
@@ -43,7 +47,7 @@ async def trip_stream(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not a trip member")
 
     return StreamingResponse(
-        get_bus().subscribe(trip_id),
+        get_bus().subscribe(trip_id, last_id=last_id, max_seconds=STREAM_MAX_SECONDS),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
