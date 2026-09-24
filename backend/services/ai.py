@@ -15,6 +15,18 @@ from pydantic import BaseModel
 client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
 MODEL = "claude-sonnet-4-6"
 
+# Below this many respondents, the aggregate maps 1:1 (or close to it) onto a
+# single real person's answers — there is no group to anonymize into. Mirrors
+# routers/preferences.py's own MIN_CONSENSUS_RESPONSES gate, which normally
+# stops the caller before this function is ever reached; this is the
+# belt-and-suspenders copy, enforced at the point of the actual model call so
+# no caller can accidentally skip it.
+MIN_CONSENSUS_RESPONSES = 2
+
+
+class InsufficientResponsesError(Exception):
+    """Raised instead of calling the model when there's no group to reason about."""
+
 # The Silent Conflict Surfacer is the flagship reasoning feature — use the
 # strongest model. Per the claude-api skill, the current default id is
 # claude-opus-4-8. Structured outputs (client.messages.parse + output_format)
@@ -199,8 +211,16 @@ async def surface_group_consensus(aggregate: dict, trip_meta: dict) -> Consensus
         call (belt-and-suspenders on top of the prompt rule).
 
     Raises on API/parse failure so the caller can fall back to a *labeled*
-    deterministic summary — never a silent canned response.
+    deterministic summary — never a silent canned response. Also raises
+    InsufficientResponsesError without ever calling the model when the
+    aggregate has too few respondents to anonymize (see MIN_CONSENSUS_RESPONSES).
     """
+    if aggregate.get("respondent_count", 0) < MIN_CONSENSUS_RESPONSES:
+        raise InsufficientResponsesError(
+            f"{aggregate.get('respondent_count', 0)} respondent(s), "
+            f"need at least {MIN_CONSENSUS_RESPONSES} to reason about a group anonymously"
+        )
+
     gap_flags = [str(f) for f in (aggregate.get("gap_flags") or [])]
     allowed_flags = set(gap_flags)
 

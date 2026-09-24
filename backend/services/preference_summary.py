@@ -62,6 +62,7 @@ def aggregate_preferences(preferences: list[Any]) -> dict:
     summary = "Group preference summary is based on current responses."
     return {
         "summary": summary,
+        "respondent_count": len(preferences),
         "budget_overlap": budget_overlap,
         "dietary_union": dietary_union,
         "dietary_distribution": dietary_distribution,

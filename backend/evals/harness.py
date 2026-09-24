@@ -109,9 +109,21 @@ def run_scenario(
     live=True: hits the real Anthropic model via the unpatched client.
     """
     aggregate = build_aggregate(scenario)
-    if live:
-        report = run_surfacer(aggregate, scenario.trip_meta)
-    else:
-        with _patched_client(builder or honest_builder):
+    try:
+        if live:
             report = run_surfacer(aggregate, scenario.trip_meta)
+        else:
+            with _patched_client(builder or honest_builder):
+                report = run_surfacer(aggregate, scenario.trip_meta)
+    except ai.InsufficientResponsesError:
+        # The model was never called — correct behaviour whenever the scenario
+        # itself expects no basis for surfacing tension (see routers/preferences.py's
+        # identical gate). Any scenario that *does* expect a report is a real failure.
+        if scenario.expect_no_conflicts and not scenario.must_flag:
+            return CheckResult(scenario.name, True, [])
+        return CheckResult(
+            scenario.name,
+            False,
+            ["InsufficientResponsesError raised but this scenario expects a report"],
+        )
     return check_report(scenario, aggregate, report)

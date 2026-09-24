@@ -22,11 +22,22 @@ class Settings(BaseSettings):
         "https://frontend-rmrv09xjy-argaurs-projects.vercel.app,"
         "https://frontend-lovat-phi-52.vercel.app,"
         "https://frontend-argaurs-projects.vercel.app,"
-        "https://trivo-argaur.vercel.app"
+        "https://trivo-argaur.vercel.app,"
+        "https://trivo.gauravg.dev"
     )
 
     # Google Places API (optional — demo sample data when empty)
     google_maps_api_key: str = ""
+
+    # Error tracking (optional — Sentry is disabled when empty)
+    sentry_dsn: str = ""
+
+    # Upstash Redis (SSE pub/sub — replaces the old in-memory asyncio.Queue,
+    # which can't survive Vercel's stateless/multi-instance functions).
+    # Auto-injected as env vars once Upstash is added from the Vercel
+    # dashboard's Storage tab.
+    upstash_redis_rest_url: str = ""
+    upstash_redis_rest_token: str = ""
 
     @property
     def origins_list(self) -> list[str]:
