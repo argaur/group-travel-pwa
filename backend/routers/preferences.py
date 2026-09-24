@@ -11,16 +11,17 @@ from database import get_db
 from models.db import GroupConsensusReport, Preference, Trip, TripMember
 from routers.guards import parse_uuid
 from routers.stream import publish
-from services.ai import aggregate_input_hash, surface_group_consensus, synthesize_preferences
+from services.ai import (
+    MIN_CONSENSUS_RESPONSES,
+    aggregate_input_hash,
+    surface_group_consensus,
+    synthesize_preferences,
+)
 from services.preference_summary import aggregate_preferences
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# The surfacer needs enough responses to reason about a *group* without any
-# chance of exposing an individual. Below this it declines honestly.
-MIN_CONSENSUS_RESPONSES = 2
 
 
 def _deterministic_consensus(aggregate: dict) -> dict:

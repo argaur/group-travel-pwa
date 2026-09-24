@@ -3,6 +3,7 @@ load_dotenv()
 
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -11,6 +12,9 @@ from database import engine
 from routers import ai_routes, auth, expenses, itinerary, members, places, preferences, push, rsvp, stream, tasks, trips, votes
 
 settings = get_settings()
+
+if settings.sentry_dsn:
+    sentry_sdk.init(dsn=settings.sentry_dsn, send_default_pii=False)
 
 
 @asynccontextmanager

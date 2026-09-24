@@ -30,6 +30,15 @@ jobs:
         run: npm run lint
       - name: Typecheck
         run: npx tsc --noEmit
+      - name: Dependency audit
+        # audit-level=critical, not high: @ducanh2912/next-pwa (latest, 10.2.9) pulls a
+        # workbox-build chain with unresolved moderate/high advisories (serialize-javascript
+        # RCE/DoS) and no patched release exists upstream as of 2026-09-17. workbox-build is
+        # a build-time-only webpack plugin (service worker bundling), never shipped to the
+        # browser. Revisit at high once next-pwa/workbox-build ships a fix.
+        run: npm audit --audit-level=critical
+      - name: Unit tests
+        run: npm run test:run
 
   backend:
     name: Backend — pytest + AI evals
@@ -56,6 +65,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
+      - name: Dependency audit
+        # PYSEC-2026-1325 (ecdsa, transitive via python-jose[cryptography]) is a
+        # timing side-channel with no fix version — python-ecdsa's maintainers
+        # have stated by policy they won't patch side-channel issues in pure
+        # Python. Ignored here, not silently: revisit if ecdsa is ever dropped
+        # in favor of a jose/JWT library that doesn't pull it in.
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements.txt --ignore-vuln PYSEC-2026-1325
       - name: Unit tests + AI eval suite
         run: python -m pytest -ra
       - name: AI evals (one-command runner)
