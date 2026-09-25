@@ -91,11 +91,12 @@ class RedisBus:
 
     async def publish(self, trip_id: str, event_type: str, data: dict) -> None:
         key = self._key(trip_id)
-        await self._redis.xadd(
-            key, "*", {"event": event_type, "data": json.dumps(data)},
-            maxlen=self._STREAM_MAXLEN, approximate=True,
-        )
-        await self._redis.expire(key, self._STREAM_TTL_SECONDS)
+        # upstash-redis has no stream methods, so send the raw commands through execute().
+        await self._redis.execute([
+            "XADD", key, "MAXLEN", "~", self._STREAM_MAXLEN, "*",
+            "event", event_type, "data", json.dumps(data),
+        ])
+        await self._redis.execute(["EXPIRE", key, self._STREAM_TTL_SECONDS])
 
     def subscribe(
         self,
@@ -111,13 +112,14 @@ class RedisBus:
         function time limit closes the stream itself; the client resumes with the last id it saw."""
         key = self._key(trip_id)
         if last_id is None:
-            latest = await self._redis.xrevrange(key, "+", "-", count=1)
+            latest = await self._redis.execute(["XREVRANGE", key, "+", "-", "COUNT", 1])
             last_id = latest[0][0] if latest else "0"
         deadline = None if max_seconds is None else time.monotonic() + max_seconds
         while deadline is None or time.monotonic() < deadline:
-            entries = await self._redis.xrange(key, f"({last_id}", "+")
+            entries = await self._redis.execute(["XRANGE", key, f"({last_id}", "+"])
             if entries:
-                for entry_id, fields in entries:
+                for entry_id, flat in entries:
+                    fields = dict(zip(flat[::2], flat[1::2]))  # REST replies with [field, value, ...]
                     last_id = entry_id
                     yield f"id: {entry_id}\nevent: {fields['event']}\ndata: {fields['data']}\n\n"
             else:
