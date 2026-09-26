@@ -13,6 +13,7 @@ import {
 } from "@/lib/backend-auth"
 import AppShell from "@/components/AppShell"
 import PlaceCard from "@/components/places/PlaceCard"
+import { tallyOf, type VoteState } from "@/lib/votes"
 
 type MemberRow = {
   user: { id: string; name: string; avatar_url: string | null }
@@ -211,13 +212,13 @@ export default function DashboardPage() {
       // Fetch vote tallies for all topics (non-blocking — silently ignore errors)
       const tallyResults = await Promise.allSettled(
         VOTE_TOPICS.map((t) =>
-          api.get<Record<string, number>>(`/trips/${params.tripId}/votes/${t.type}`)
+          api.get<VoteState>(`/trips/${params.tripId}/votes/${t.type}`)
         )
       )
       const tallies: Record<string, Record<string, number>> = {}
       VOTE_TOPICS.forEach((t, i) => {
         const r = tallyResults[i]
-        tallies[t.type] = r.status === "fulfilled" ? (r.value ?? {}) : {}
+        tallies[t.type] = r.status === "fulfilled" ? tallyOf(r.value) : {}
       })
       setVoteTallies(tallies)
     } catch (error: unknown) {
