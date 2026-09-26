@@ -5,7 +5,7 @@
 Trivo — AI-native group travel planning PWA. Solves budget misalignment, organizer burnout, and no single source of truth for group trips.
 
 ## Stack
-Next.js 16 App Router · TypeScript · Tailwind CSS · Auth.js v5 (Google OAuth) · FastAPI (Python) · PostgreSQL/Neon · Claude API (claude-sonnet-4-6) · Railway (backend) · Vercel (frontend) · next-pwa · SSE (real-time)
+Next.js 16 App Router · TypeScript · Tailwind CSS · Auth.js v5 (Google OAuth) · FastAPI (Python) · PostgreSQL/Neon · Claude API (claude-sonnet-4-6) · Vercel `trivo-api` (backend) · Vercel (frontend) · next-pwa · SSE (real-time)
 
 ## Current Task
 None active. Last session completed Trivo rebrand + landing page (2026-04-04).
@@ -16,7 +16,7 @@ None active. Last session completed Trivo rebrand + landing page (2026-04-04).
 - **Trivo rebrand:** Product renamed from GroupTrip → Trivo; landing page built (8 sections), SVG app icon + OG image, PWA manifest updated
 
 ## Next Steps
-1. Fix CORS — update Railway `ALLOWED_ORIGINS` env var with current Vercel URL, or set up custom domain on Vercel
+1. Cutover Step 7: retire Railway (see `docs/railway-cutover-plan.md`)
 2. Rename remaining "GroupTrip" references: `AppShell.tsx`, `auth/signin/page.tsx`, `dashboard/page.tsx`
 3. Generate PNG icons (192×512) from `/public/icons/trivo-icon.svg` using sharp
 4. Razorpay merchant onboarding → wire expense settlement payments
@@ -37,15 +37,15 @@ None active. Last session completed Trivo rebrand + landing page (2026-04-04).
 ## Decisions
 - Neon (not Supabase) for PostgreSQL — both Supabase slots used on other projects
 - Auth.js v5 with JWT exchange to backend — keeps frontend/backend auth separate
-- SSE (not WebSockets) for real-time — simpler Railway hosting, sufficient for use case
+- SSE (not WebSockets) for real-time — simpler hosting (resumable over Upstash Redis Streams on Vercel), sufficient for use case
 - Claude sync client wrapped in asyncio — avoids library mismatch with async FastAPI
 - Fraunces italic for all display type — editorial travel-magazine aesthetic
 - Dark navy (#0f1222) for hero/dark sections, warm parchment (#f6f2ed) for app background
 
 ## Blockers / Notes
-- **CORS:** Railway `ALLOWED_ORIGINS` doesn't include latest Vercel deploy URL `frontend-rmrv09xjy-argaurs-projects.vercel.app` — API calls will fail from that URL
+- **CORS:** resolved. `BUILTIN_ORIGINS` in `backend/config.py` covers known frontend hosts
 - **PNG icons missing:** Manifest references icon-192.png and icon-512.png — files don't exist yet, SVG fallback works but Android PWA install may warn
 - **Razorpay:** Merchant account onboarding in progress — blocks Sprint 6 (payments)
 - **iOS push:** Requires PWA installed to home screen + iOS 16.4+
 - Live frontend: https://frontend-rmrv09xjy-argaurs-projects.vercel.app
-- Live backend: https://group-project-pwa-production.up.railway.app
+- Live backend: https://trivo-api.gauravg.dev

@@ -1,7 +1,7 @@
 """Per-trip SSE event bus.
 
 Two backends behind one interface:
-- MemoryBus: in-process queues. Correct on a single long-lived process (Railway, local dev).
+- MemoryBus: in-process queues. Correct on a single long-lived process (local dev).
 - RedisBus: Upstash Redis Streams. Needed on serverless hosts, where instances share no memory.
 
 Redis is used only when both Upstash settings are present. Publishing never breaks the request
