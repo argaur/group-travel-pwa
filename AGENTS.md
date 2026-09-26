@@ -18,12 +18,12 @@ AI-native group trip coordination Progressive Web App. Solves silent budget misa
 | Layer | Technology | Hosting |
 |---|---|---|
 | Frontend | Next.js 16 + next-pwa | Vercel |
-| Backend | FastAPI (Python) | Railway |
+| Backend | FastAPI (Python) | Vercel (`trivo-api`) |
 | Database | PostgreSQL / Neon | Neon serverless |
 | AI | Claude API (claude-sonnet-4-6) | Anthropic |
 | Auth | Auth.js | — |
 | Payments | Razorpay (UPI) | — |
-| Realtime | FastAPI SSE | Railway (backend) |
+| Realtime | FastAPI SSE over Upstash Redis Streams | Vercel (`trivo-api`) |
 
 ---
 
@@ -61,7 +61,7 @@ group-travel-pwa/
 - No Supabase (both slots used) — use Neon only
 - Design spec via /frontend-design skill at dev start — no pre-baked aesthetics
 - iOS push notifications need PWA installed + iOS 16.4+
-- Confirm before Railway redeploys or Vercel production pushes
+- Confirm before Vercel production pushes (a push to `main` builds both projects as production)
 
 ---
 
@@ -69,8 +69,8 @@ group-travel-pwa/
 
 ### Live URLs
 - **Frontend:** https://frontend-rmrv09xjy-argaurs-projects.vercel.app
-- **Backend:** https://group-project-pwa-production.up.railway.app
-- **API base:** https://group-project-pwa-production.up.railway.app/api/v1
+- **Backend:** https://trivo-api.gauravg.dev
+- **API base:** https://trivo-api.gauravg.dev/api/v1
 
 ### Latest Commit
 `ab9a390` — Rebrand to Trivo: landing page, icons, and PWA metadata
@@ -96,7 +96,7 @@ group-travel-pwa/
 - **Landing aesthetic:** Expedition Club — dark navy hero, gradient shimmer wordmark, grain overlay
 
 ### Known Issues / Blockers
-- CORS: `ALLOWED_ORIGINS` on Railway doesn't include latest Vercel deploy URL — fix: update Railway env or add custom domain
+- CORS: resolved. `BUILTIN_ORIGINS` in `backend/config.py` covers the known frontend hosts; `ALLOWED_ORIGINS` only adds to it
 - PNG icons (192×512) not yet generated — SVG icon exists at `/icons/trivo-icon.svg`
 - Razorpay merchant onboarding pending (blocks payment features)
 
@@ -106,7 +106,7 @@ group-travel-pwa/
 - `frontend/app/dashboard/page.tsx` — page title
 
 ### Next Priorities
-1. Fix CORS by setting custom domain on Vercel or updating Railway `ALLOWED_ORIGINS`
+1. Cutover Step 7: retire Railway (see `docs/railway-cutover-plan.md`)
 2. Complete AppShell + signin page rename to Trivo
 3. Generate PNG icons from SVG (sharp or manual export)
 4. Razorpay onboarding → wire up expense settlement payments

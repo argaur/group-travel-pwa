@@ -2,10 +2,10 @@
 
 > Group travel breaks down not on logistics, but on the conversations nobody has: budgets people won't state, diets discovered on the ground, and one organizer quietly carrying the whole trip. Trivo is the coordination layer that surfaces those silent misalignments **before** money is spent.
 
-**Live:** [trivo-argaur.vercel.app](https://trivo-argaur.vercel.app) &nbsp;·&nbsp; **API:** [group-project-pwa-production.up.railway.app/health](https://group-project-pwa-production.up.railway.app/health)
+**Live:** [trivo-argaur.vercel.app](https://trivo-argaur.vercel.app) &nbsp;·&nbsp; **API:** [trivo-api.gauravg.dev/health](https://trivo-api.gauravg.dev/health)
 &nbsp;·&nbsp; **PRD:** [`Reference Files/Group Travel PRD v1.md`](Reference%20Files/Group%20Travel%20PRD%20v1.md)
 
-Stack: Next.js 16 (PWA) · FastAPI · PostgreSQL/Neon · Claude · SSE · deployed on Vercel + Railway.
+Stack: Next.js 16 (PWA) · FastAPI · PostgreSQL/Neon · Claude · SSE · deployed on Vercel.
 
 ---
 
@@ -77,7 +77,7 @@ flowchart LR
     UI[App Router UI]
     SW[Service worker / installable]
   end
-  subgraph API["FastAPI — Railway"]
+  subgraph API["FastAPI — Vercel"]
     R[13 routers · /api/v1]
     G[guards.py — server-side auth on every router]
     AGG[aggregate_preferences · deterministic]
@@ -97,10 +97,10 @@ flowchart LR
 | Layer | Technology | Hosting |
 |---|---|---|
 | Frontend | Next.js 16 + next-pwa | Vercel |
-| Backend | FastAPI (async Python 3.13) | Railway |
+| Backend | FastAPI (async Python 3.13) | Vercel |
 | Database | PostgreSQL (14 tables, 7 Alembic migrations) | Neon serverless |
 | AI | Claude (structured outputs) | Anthropic |
-| Realtime | FastAPI SSE (in-memory pub/sub) | Railway |
+| Realtime | FastAPI SSE (Upstash Redis Streams, resumable) | Vercel |
 | Auth | Auth.js (JWT session → backend guards) | — |
 
 **Notable in the code:** consistent server-side auth guards on all 13 routers (`routers/guards.py`), a coherent 14-table schema with a clean Alembic chain, the surfacer's report **persisted** in `group_consensus_reports` keyed by a hash of the aggregate (generated once, invalidated when a new preference lands), and hardened ID parsing so malformed IDs return 4xx, not 500s.

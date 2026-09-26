@@ -9,6 +9,7 @@ BUILTIN_ORIGINS = [
     "https://frontend-argaurs-projects.vercel.app",
     "https://trivo-argaur.vercel.app",
     "https://trivo.gauravg.dev",
+    "https://trivo-api.gauravg.dev",
 ]
 
 

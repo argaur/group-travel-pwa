@@ -39,7 +39,9 @@ uses an in-memory bus unless `UPSTASH_REDIS_REST_*` is set.
 
 > Confirmed production targets — never assume a default (per global Non-Negotiables). **Railway runs the repo-root `railway.toml` `startCommand`** (NOT `backend/Procfile`) — verified via the deploy logs. **CRITICAL (fixed 2026-07-23, commit `73a865f`):** the service **Root Directory is `backend/`**, so the container WORKDIR is already inside `backend/`. The startCommand MUST be `uvicorn main:app --host 0.0.0.0 --port $PORT` with **NO `cd backend`** — an earlier `cd backend` prefix hit `cd: backend: No such file or directory`, so uvicorn never started, `/health` failed, and Railway kept every new deploy unpromoted (prod pinned to an ancient build for a full day). **Migrations are applied OUT-OF-BAND** (`alembic upgrade head` from `backend/` against the shared Neon DB), not in the start command — running them there stalled deploys past the healthcheck window. Railway's `DATABASE_URL` == local `.env` (same Neon db `group_travel`).
 
-**Deploy target:** Railway backend — project `group-project-pwa` (ID `09a1142a-65e0-4763-b456-caa199fc2efa`), env `production`, service `group-project-pwa`, root dir `backend/`, runtime Railpack Python 3.13 (container/node). URL: https://group-project-pwa-production.up.railway.app
+**Deploy target (legacy, retire at Step 7):** Railway backend, no longer called by the production frontend since 2026-09-25 (rollback path: set `NEXT_PUBLIC_API_URL` back to this URL and redeploy the frontend) — project `group-project-pwa` (ID `09a1142a-65e0-4763-b456-caa199fc2efa`), env `production`, service `group-project-pwa`, root dir `backend/`, runtime Railpack Python 3.13 (container/node). URL: https://group-project-pwa-production.up.railway.app
+
+**Deploy target:** Vercel backend, **live since 2026-09-25** (the production frontend calls it) — project `trivo-api` (ID `prj_kuvX0nfMo4vhzDGuusS3YLvb9nDW`), root dir `backend/`, FastAPI, region sin1. URL: https://trivo-api.gauravg.dev (Cloudflare CNAME to `cname.vercel-dns.com`, DNS only). Git-linked: a push to `main` builds it as production. **Pin `--target=preview` on every CLI or API deploy**: an API deploy with a git source and no target became a production deployment. Env vars are set for Production and Preview (`DB_POOL_SIZE=1`, `DB_MAX_OVERFLOW=0`, `UPSTASH_REDIS_REST_*`). `upstash-redis` has no stream methods, so `RedisBus` sends raw `XADD`/`XRANGE`/`XREVRANGE` through `execute()`.
 
 **Deploy target:** Vercel frontend — project `frontend` (ID `prj_AcSRrMRk5J8lX86AhnWOT1gXXF0F`), team `argaurs-projects` (`team_3VVVuqz6VHXjBQCANdWIY7OF`), runtime Next.js (node). Primary domain: https://trivo-argaur.vercel.app
 
@@ -89,10 +91,10 @@ group-travel-pwa/
 ---
 
 ## Status
-- **State:** active — V2 live in production (Next.js 16 frontend on Vercel, FastAPI backend on Railway, removal planned)
+- **State:** active — V2 live in production (Next.js 16 frontend on Vercel, FastAPI backend on Vercel `trivo-api` since 2026-09-25; Railway idle, retirement pending)
 - **Current task:** V2 polish — Trivo rebrand follow-on renames + cartographic frontend redesign
 - **Blocker:** Apply for Razorpay early (onboarding takes time)
-- **Last updated:** 2026-09-24 (E2E fixes merged; see memory/project.md)
+- **Last updated:** 2026-09-25 (PR #6 merged, trivo-api live, frontend switched; see memory/project.md)
 
 ## Model notes
 **This section expires. Review it at every model launch and every Claude Code version bump.**
