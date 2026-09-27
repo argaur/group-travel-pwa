@@ -140,6 +140,54 @@ async def test_redis_bus_ends_stream_cleanly_at_max_seconds():
     assert all(c == ": keepalive\n\n" for c in chunks)
 
 
+async def _pull(stream, n):
+    return [await stream.__anext__() for _ in range(n)]
+
+
+async def test_redis_bus_backs_off_polling_while_idle(monkeypatch):
+    """Each idle poll is one Upstash command. An open tab with nothing happening must not poll at full rate."""
+    sleeps = []
+
+    async def fake_sleep(seconds):
+        sleeps.append(seconds)
+
+    monkeypatch.setattr(realtime.asyncio, "sleep", fake_sleep)
+    bus = _redis_bus(FakeRedis(), poll=1.0)
+    bus._IDLE_POLL_MAX_SECONDS = 8.0
+    bus._IDLE_BACKOFF_FACTOR = 2.0
+    stream = bus.subscribe("t")
+    await _pull(stream, 6)
+    assert sleeps == [1.0, 2.0, 4.0, 8.0, 8.0]  # grows, then holds at the cap
+    await stream.aclose()
+
+
+async def test_redis_bus_returns_to_fast_polling_after_an_event(monkeypatch):
+    sleeps = []
+
+    async def fake_sleep(seconds):
+        sleeps.append(seconds)
+
+    monkeypatch.setattr(realtime.asyncio, "sleep", fake_sleep)
+    fake = FakeRedis()
+    bus = _redis_bus(fake, poll=1.0)
+    bus._IDLE_POLL_MAX_SECONDS = 8.0
+    bus._IDLE_BACKOFF_FACTOR = 2.0
+    stream = bus.subscribe("t")
+    await _pull(stream, 3)  # two idle sleeps: 1.0, 2.0
+    fake.add("vote_cast", '{"n": 1}')
+    chunks = await _pull(stream, 2)  # sleeps 4.0, sees the event, then must poll fast again
+    assert chunks[0].startswith("id: 1-0\n")
+    assert sleeps == [1.0, 2.0, 4.0, 1.0]
+    await stream.aclose()
+
+
+def test_redis_bus_idle_polling_fits_the_upstash_free_tier():
+    """One tab left open for a month must stay under Upstash's 500K commands/month free tier."""
+    month_seconds = 30 * 24 * 3600
+    assert realtime.RedisBus._IDLE_BACKOFF_FACTOR > 1
+    assert month_seconds / realtime.RedisBus._IDLE_POLL_MAX_SECONDS < 250_000  # leaves room for a second tab
+
+
 async def test_redis_bus_publish_writes_a_stream_entry_the_reader_can_replay():
     fake = FakeRedis()
     bus = _redis_bus(fake)
