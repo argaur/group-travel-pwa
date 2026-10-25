@@ -78,7 +78,12 @@ class RedisBus:
 
     _STREAM_TTL_SECONDS = 6 * 60 * 60
     _STREAM_MAXLEN = 200
+    # Every poll is one Upstash command (free tier: 500K a month). Poll fast while events flow, then back
+    # off while a stream is idle, so a tab left open all month costs about 170K commands, not 860K.
+    # The first event after a quiet spell can arrive up to _IDLE_POLL_MAX_SECONDS late, then polling speeds up.
     _POLL_INTERVAL_SECONDS = 3.0
+    _IDLE_POLL_MAX_SECONDS = 15.0
+    _IDLE_BACKOFF_FACTOR = 1.5
 
     def __init__(self, url: str, token: str) -> None:
         from upstash_redis.asyncio import Redis  # imported lazily: only needed when configured
@@ -115,16 +120,20 @@ class RedisBus:
             latest = await self._redis.execute(["XREVRANGE", key, "+", "-", "COUNT", 1])
             last_id = latest[0][0] if latest else "0"
         deadline = None if max_seconds is None else time.monotonic() + max_seconds
+        interval = self._POLL_INTERVAL_SECONDS
         while deadline is None or time.monotonic() < deadline:
             entries = await self._redis.execute(["XRANGE", key, f"({last_id}", "+"])
             if entries:
+                interval = self._POLL_INTERVAL_SECONDS  # activity: poll fast again
                 for entry_id, flat in entries:
                     fields = dict(zip(flat[::2], flat[1::2]))  # REST replies with [field, value, ...]
                     last_id = entry_id
                     yield f"id: {entry_id}\nevent: {fields['event']}\ndata: {fields['data']}\n\n"
             else:
                 yield ": keepalive\n\n"
-            await asyncio.sleep(self._POLL_INTERVAL_SECONDS)
+            await asyncio.sleep(interval)
+            if not entries:
+                interval = min(interval * self._IDLE_BACKOFF_FACTOR, self._IDLE_POLL_MAX_SECONDS)
 
 
 _bus: Optional[Bus] = None
